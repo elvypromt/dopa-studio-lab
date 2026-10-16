@@ -409,6 +409,9 @@ body.studio .gd .ge{display:grid}
 .gd .ge .field{padding:9px 12px;font-size:13px}
 .gd .ge textarea.field{min-height:64px;resize:vertical;font-weight:500}
 .tile .nocta{position:absolute;top:40px;right:10px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:#D4505E;box-shadow:0 2px 8px rgba(212,80,94,.4)}
+.tile .fav{position:absolute;top:38px;left:6px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(40,18,34,.35);color:#fff;font-size:17px;line-height:30px;padding:0;cursor:pointer;opacity:.75;transition:transform .3s var(--spring),opacity .2s}
+.tile .fav:hover{opacity:1;transform:scale(1.15)}
+.tile .fav.on{opacity:1;color:#FFD34D;background:rgba(40,18,34,.55);text-shadow:0 0 10px rgba(255,211,77,.7)}
 .tile .novo{position:absolute;top:66px;right:10px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;color:#fff;background:rgba(40,18,34,.6)}
 .tile .info .hl{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.22)}
 .wgrp{grid-column:1/-1;display:flex;align-items:baseline;gap:10px;margin:14px 2px 0;font-family:var(--serif);font-size:22px;color:var(--ink)}
@@ -1054,7 +1057,8 @@ function renderFilters(){
   document.querySelectorAll('#filters .chip').forEach(b=>b.onclick=()=>{F=b.dataset.k;renderFilters();renderWall()});
   const nNo=REELS.filter(r=>r.end_cta==='none').length,nVo=REELS.filter(r=>r.voiced===false).length;
   const g=[['none','Подряд'],['hl','По хайлайтам'],['theme','По темам'],['cta','По призыву'],['batch','По пачкам']];
-  const f2=[['all','Все'],['nocta',`Нет призыва · ${nNo}`],['novo',`Без голоса · ${nVo}`]];
+  const nFav=REELS.filter(r=>r.fav).length;
+  const f2=[['all','Все'],...(studio()?[['fav',`★ Избранное · ${nFav}`]]:[]),['nocta',`Нет призыва · ${nNo}`],['novo',`Без голоса · ${nVo}`]];
   $('filters2').innerHTML=g.map(([k,t])=>`<button class="chip ${GRP===k?'on':''}" data-g="${k}">${t}</button>`).join('')+'<span style="width:14px"></span>'+f2.map(([k,t])=>`<button class="chip ${F2===k?'on':''}" data-f2="${k}">${t}</button>`).join('');
   $('filters2').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{GRP=b.dataset.g;renderFilters();renderWall()});
   $('filters2').querySelectorAll('[data-f2]').forEach(b=>b.onclick=()=>{F2=b.dataset.f2;renderFilters();renderWall()});
@@ -1070,7 +1074,7 @@ function grpHead(k,n){
   return `<div class="wgrp">${esc(BATCH_T[k]||k||'—')}<small>${n}</small></div>`;
 }
 function renderWall(){
-  let list=REELS.filter(r=>(F==='all'||r.status===F)&&(F2==='all'||(F2==='nocta'?r.end_cta==='none':r.voiced===false)));
+  let list=REELS.filter(r=>(F==='all'||r.status===F)&&(F2==='all'||(F2==='fav'?r.fav:F2==='nocta'?r.end_cta==='none':r.voiced===false)));
   let keys=[''];
   if(GRP!=='none'){const ord=GRP==='hl'?HL_ORDER:GRP==='theme'?Object.keys(CL.themes||{}):GRP==='cta'?['none','site','word']:Object.keys(BATCH_T);
     const ix=k=>{const i=ord.indexOf(k);return i<0?999:i};
@@ -1080,11 +1084,13 @@ function renderWall(){
     let head='';if(!keys){const k=grpKey(r);if(k!==last){last=k;head=grpHead(k,list.filter(x=>grpKey(x)===k).length)}}
     return head+tileHtml(r,s,p,n)}).join('')||'<div class="empty">Здесь пока пусто</div>';
   document.querySelectorAll('.tile').forEach(t=>{t.onclick=()=>openSheet(t.dataset.id);t.onpointermove=e=>{const b=t.getBoundingClientRect();t.style.setProperty('--ry',((e.clientX-b.left)/b.width-.5)*8+'deg')}});
+  document.querySelectorAll('.tile .fav').forEach(b=>b.onclick=async e=>{e.stopPropagation();const r=REELS.find(x=>x.id===b.dataset.fav);if(!r)return;const v=!r.fav;r.fav=v;renderFilters();renderWall();
+    const {error}=await sb.from('reels').update({fav:v}).eq('id',r.id);if(error){r.fav=!v;renderFilters();renderWall();fail(error)}else toast(v?'Ролик '+r.code+' в избранном':'Убран из избранного')});
 }
 function tileHtml(r,s,p,n){
     return `<div class="tile" data-id="${r.id}">${p?`<img src="${p}" alt="" loading="lazy">`:`<div class="noimg">${esc(r.code)}</div>`}
       <div class="pill"><i style="background:${s.c}"></i>${s.t}</div>${p?`<div class="num">${esc(r.code)}</div>`:''}
-      ${n?`<div class="cm">${n} комм.</div>`:''}<div class="shade"></div>
+      ${studio()?`<button class="fav ${r.fav?'on':''}" data-fav="${r.id}" title="В избранное">${r.fav?'★':'☆'}</button>`:''}${n?`<div class="cm">${n} комм.</div>`:''}<div class="shade"></div>
       ${r.end_cta==='none'?'<div class="nocta">НЕТ ПРИЗЫВА</div>':''}${r.voiced===false?'<div class="novo">без голоса</div>':''}
       <div class="info"><b>${esc(r.title)}</b><small>${r.day?esc(dayLabel(r.day)):esc(BATCH_T[r.batch]||'')}${r.dur?' · '+Math.round(r.dur)+' с':''}</small>${r.hl&&GRP!=='hl'?`<span class="hl">${esc(r.hl)}</span>`:''}</div></div>`;
 }
