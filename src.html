@@ -1068,7 +1068,7 @@ async function aiRun(r,body){
 // ── обложка из кадра ролика: тёмная, белый заголовок, зелёная плашка, официальный логотип ──
 const COV={};let LOGO_W=null;
 const CVL={low:'Текст внизу',top:'Текст вверху',big:'Большая цифра'};
-function covState(r){return COV[r.id]||(COV[r.id]={layout:'low',tag:(r.theme||'').toUpperCase(),h:r.title,accent:'',s:'',big:'',lines:'',useFrame:true})}
+function covState(r){return COV[r.id]||(COV[r.id]={layout:'low',tag:((r.theme||'').length>2?r.theme:'').toUpperCase(),h:r.title,accent:'',s:'',big:'',lines:'',useFrame:true})}
 function coverBlock(r){const c=covState(r);
   return `<div class="lbl">Сделать обложку</div><div class="ctab">
     <div class="cvai"><input class="field" id="cvWish" placeholder="Пожелание для ИИ: например, «про агентства», «смешнее», «с цифрой»" value="${esc(c.wish||'')}"><button class="btn sm lil" id="cvAI">${c.busy?'Думаю…':'✨ ИИ: 3 обложки в стиле серии'}</button></div>
