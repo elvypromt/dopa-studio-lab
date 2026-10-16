@@ -431,7 +431,7 @@ function renderWall(){
 
 // ── профиль Instagram из обложек ──
 let PMODE='now';
-const HLS=[{t:'About us',code:'51',p:'brand/hl/About_us.png'},{t:'In Claude',code:'',p:'brand/hl/In_Claude.png'},{t:'In chatGPT',code:'',p:'brand/hl/In_ChatGPT.png'},{t:'Pricing',code:'52',p:'brand/hl/Pricing.png'},{t:'How to use',code:'49',p:'brand/hl/How_to_use.png'},{t:'Works with',code:'48',p:'brand/hl/Works_with.png'},{t:'For agencies',code:'',p:'brand/hl/For_agencies.png'},{t:'FAQ',code:'',p:'brand/hl/FAQ.png'},{t:'For devs',code:'',p:'brand/hl/For_devs.png'}];
+const HLS=[{t:'How to use',code:'49',p:'brand/hl/How_to_use.png'},{t:'Works with',code:'48',p:'brand/hl/Works_with.png'},{t:'About us',code:'51',p:'brand/hl/About_us.png'},{t:'In Claude',code:'',p:'brand/hl/In_Claude.png'},{t:'In chatGPT',code:'',p:'brand/hl/In_ChatGPT.png'},{t:'Pricing',code:'52',p:'brand/hl/Pricing.png'},{t:'For agencies',code:'',p:'brand/hl/For_agencies.png'},{t:'FAQ',code:'',p:'brand/hl/FAQ.png'},{t:'For devs',code:'',p:'brand/hl/For_devs.png'}];
 function renderProfile(){
   const keep=PMODE==='now'?['pub']:['pub','sched','ok'];
   const list=REELS.filter(r=>keep.includes(r.status)).sort((a,b)=>(b.day||'').localeCompare(a.day||'')||(b.sort-a.sort));
