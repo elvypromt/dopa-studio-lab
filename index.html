@@ -369,6 +369,9 @@ body.studio .gd .ge{display:grid}
 .ctab .row{display:flex;gap:8px;flex-wrap:wrap}
 .ctab .row .field{flex:1;min-width:120px;padding:9px 12px;font-size:14px}
 @media(max-width:760px){.feed,.guides{grid-template-columns:1fr}}
+.mini .mk{display:block;font-style:normal;font-size:10px;font-weight:800;margin-top:3px;letter-spacing:.02em}
+.mini .mk.ok{color:#2E8B57}.mini .mk.no{color:#B5475E}.mini .mk.pl{color:#30A567}
+.mini.pub{box-shadow:inset 0 0 0 2px rgba(46,139,87,.45)}.mini.miss{opacity:.6;box-shadow:inset 0 0 0 1px dashed rgba(181,71,94,.5)}
 /* стратегия */
 .strat{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:18px;align-items:start}
 @media(max-width:900px){.strat{grid-template-columns:1fr}}
@@ -935,7 +938,7 @@ function renderCal(){
   const days=DOW.map((_,i)=>new Date(s.getFullYear(),s.getMonth(),s.getDate()+i));
   $('cal').innerHTML=days.map(d=>{const D=iso(d);const items=REELS.filter(r=>r.day===D);
     return `<div class="day glass ${d.getTime()===today?'today':''}" data-day="${D}"><h4>${DOW[(d.getDay()+6)%7]}<b>${d.getDate()}</b></h4>
-    ${items.map(r=>{const p=url(r.poster_path);return `<div class="mini" draggable="true" data-id="${r.id}">${p?`<img src="${p}" alt="">`:'<div class="ph"></div>'}<span>${esc(r.code)} · ${esc(r.title)}</span><i class="dot" style="background:${ST[r.status].c}"></i></div>`}).join('')}</div>`}).join('');
+    ${items.map(r=>{const p=url(r.poster_path);const pub=r.status==='pub',miss=!pub&&d.getTime()<today;return `<div class="mini${pub?' pub':''}${miss?' miss':''}" draggable="true" data-id="${r.id}">${p?`<img src="${p}" alt="">`:'<div class="ph"></div>'}<span>${esc(r.code)} · ${esc(r.title)}${pub?'<em class="mk ok">✓ вышел</em>':miss?'<em class="mk no">не вышел</em>':r.publora_status==='scheduled'?'<em class="mk pl">в Publora</em>':''}</span><i class="dot" style="background:${ST[r.status].c}"></i></div>`}).join('')}</div>`}).join('');
   document.querySelectorAll('.mini').forEach(m=>{
     m.ondragstart=e=>{m.classList.add('drag');e.dataTransfer.setData('text/plain',m.dataset.id)};
     m.ondragend=()=>m.classList.remove('drag');
