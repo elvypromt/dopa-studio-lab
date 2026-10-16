@@ -369,6 +369,28 @@ body.studio .gd .ge{display:grid}
 .ctab .row{display:flex;gap:8px;flex-wrap:wrap}
 .ctab .row .field{flex:1;min-width:120px;padding:9px 12px;font-size:14px}
 @media(max-width:760px){.feed,.guides{grid-template-columns:1fr}}
+/* процесс */
+.proc{display:grid;gap:22px}
+.pday>.dl{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 4px}
+.pday .its{display:grid;gap:10px}
+.pi{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-radius:20px}
+.pi .tm{flex:none;width:44px;font-size:12px;font-weight:700;color:var(--muted);padding-top:3px}
+.pi .bd{flex:1;min-width:0;display:grid;gap:6px}
+.pi .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:700}
+.pi .stg{padding:3px 9px;border-radius:999px;color:#fff}
+.pi .rc{color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:rgba(0,0,0,.2)}
+.pi .tx{font-size:14px;line-height:1.45;color:var(--ink)}
+.pi img,.pi video{max-width:min(320px,100%);max-height:260px;border-radius:14px;display:block;background:#0001}
+.pi .hid{font-size:11px;color:var(--muted);border:1px dashed currentColor;border-radius:999px;padding:2px 8px}
+.pi.off{opacity:.75}
+.pi .eye{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.5)}
+.stages{display:flex;gap:4px;flex-wrap:wrap}
+.stages span{font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.45);color:var(--muted)}
+.stages span.done{color:var(--ink);background:rgba(255,255,255,.75)}
+.stages span.cur{color:#fff;background:linear-gradient(135deg,#C98596,#9C86D9)}
+.vers{display:flex;gap:6px;flex-wrap:wrap}
+.vers button{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.6);color:var(--ink)}
+.vers button.on{background:var(--ink);color:#fff}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -435,6 +457,13 @@ body.studio .gd .ge{display:grid}
     <div class="sh"><div><div class="eyebrow">Нажмите, чтобы открыть ролик на этой секунде</div><h2>Свежие <em>комментарии</em></h2></div>
       <div class="filters"><button class="chip" id="feedAll">Все ролики</button><button class="chip" id="feedGuides">Призывы и гайды</button></div></div>
     <div class="feed" id="feed"></div>
+  </section>
+
+  <section id="s-proc">
+    <div class="sh"><div><div class="eyebrow">Что сделано по дням · пишет сама студия</div><h2>Процесс <em>работы</em></h2></div>
+      <div class="filters"><button class="chip on" data-pf="all">Все</button><button class="chip" data-pf="reel">По роликам</button></div></div>
+    <div class="proc" id="proc"></div>
+    <div style="margin-top:14px"><button class="btn sm" id="procMore" hidden>Показать раньше</button></div>
   </section>
 
   <section id="s-tasks">
@@ -538,6 +567,7 @@ body.studio .gd .ge{display:grid}
 <nav class="dock glass" id="dock">
   <div class="blob"></div>
   <button data-s="s-home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Обзор</span></button>
+  <button data-s="s-proc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 12h16M4 18h7"/><circle cx="18" cy="6" r="2"/><circle cx="15" cy="18" r="2"/></svg><span>Процесс</span></button>
   <button data-s="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Решения</span></button>
   <button data-s="s-reels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/></svg><span>Ролики</span></button>
   <button data-s="s-profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.3" cy="6.7" r=".8" fill="currentColor"/></svg><span>Профиль</span></button>
@@ -580,6 +610,7 @@ const label=d=>DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MONS[d.getMonth()];
 const dayLabel=s=>{const d=fromIso(s);return d?label(d):'без даты'};
 const now0=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())};
 
+let ACT=[],ACT_N=40;
 let CL=null,ME=null,ALL_ME=[],REELS=[],CMS=[],TASKS=[],DG=[],PEOPLE=[],GUIDES=[],SIGNED={};
 let VIEW='studio',F='all',W=null,CUR=null;
 const studio=()=>ME&&ME.role==='studio'&&VIEW==='studio';
@@ -636,6 +667,7 @@ async function loadComments(){const {data,error}=await sb.from('comments').selec
 async function loadTasks(){const {data,error}=await sb.from('tasks').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error)throw error;TASKS=data}
 async function loadDigest(){const {data,error}=await sb.from('digest').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error)throw error;DG=data}
 async function loadGuides(){const {data,error}=await sb.from('guides').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error){console.warn(error);GUIDES=[];return}GUIDES=data}
+async function loadAct(){const {data,error}=await sb.from('activity').select('*').eq('client_id',CL.id).order('created_at',{ascending:false}).limit(300);if(error){console.warn(error);ACT=[];return}ACT=data;await sign(ACT.map(a=>a.file_path))}
 async function loadPeople(){if(!isStudioUser()){PEOPLE=[];return}const {data}=await sb.from('members').select('id,name,role,active,last_login,user_id').eq('client_id',CL.id).order('created_at');PEOPLE=data||[]}
 
 async function start(){
@@ -651,7 +683,7 @@ async function start(){
   CL=cls.find(c=>c.slug===want)||cls[0];
   ME=mem.find(m=>m.client_id===CL.id);
   VIEW=ME.role==='studio'?'studio':'client';
-  await Promise.all([loadReels(),loadComments(),loadTasks(),loadDigest(),loadPeople(),loadGuides()]);
+  await Promise.all([loadReels(),loadComments(),loadTasks(),loadDigest(),loadPeople(),loadGuides(),loadAct()]);
   await sign([...HLS.map(h=>CL.id+'/'+h.p),CL.logo_path,...REELS.map(r=>r.poster_path),...TASKS.flatMap(t=>t.kind==='pick'?t.opts.map(o=>o[1]):[])]);
   document.title=CL.name+' · Dopa Room';
   $('login').hidden=true;$('boot').hidden=true;$('app').hidden=false;
@@ -671,9 +703,51 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'comments',filter:f},()=>later('c',async()=>{await loadComments();renderWall();renderFeed();if(sheetOpen())renderComments()}))
     .on('postgres_changes',{event:'*',schema:'public',table:'tasks',filter:f},()=>later('t',async()=>{await loadTasks();renderTasks()}))
     .on('postgres_changes',{event:'*',schema:'public',table:'guides',filter:f},()=>later('g',async()=>{await loadGuides();renderGuides();renderFeed();if(sheetOpen())renderSheet(true)}))
+    .on('postgres_changes',{event:'*',schema:'public',table:'activity',filter:f},()=>later('a',async()=>{await loadAct();renderProc();if(sheetOpen())renderSheet(true)}))
     .on('postgres_changes',{event:'*',schema:'public',table:'digest',filter:f},()=>later('d',async()=>{await loadDigest();renderTG()}))
     .subscribe();
 }
+
+// ── процесс: что сделано, по дням (записи пишет tools/room.mjs) ──
+const STG={idea:['Идея','#B79BD9'],script:['Сценарий','#8E9BDB'],board:['Раскадровка','#6FA3C9'],anim:['Анимация','#5FAE9B'],voice:['Озвучка','#D9A15F'],edit:['Монтаж','#D98A6F'],review:['На проверке','#C98596'],ready:['Готов','#4FA36F'],publora:['Publora','#30A567'],note:['Заметка','#9A8F98']};
+const PIPE=['idea','script','board','anim','voice','edit','review','ready','publora'];
+let PF='all';
+const actVis=()=>studio()?ACT:ACT.filter(a=>a.visible);
+function actItem(a,withReel=true){
+  const r=a.reel_id&&REELS.find(x=>x.id===a.reel_id);const g=STG[a.stage]||STG.note;const u=url(a.file_path);
+  const t=new Date(a.created_at);
+  const media=!u?'':a.kind==='video'||a.kind==='version'||a.kind==='old'?`<video src="${u}" controls playsinline preload="metadata"></video>`:/\.pdf$/i.test(a.file_path)?`<a class="sub" href="${u}" target="_blank">открыть файл ↗</a>`:`<img src="${u}" loading="lazy" alt="">`;
+  return `<div class="pi glass${a.visible?'':' off'}">
+    <div class="tm">${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}</div>
+    <div class="bd"><div class="hd"><span class="stg" style="background:${g[1]}">${g[0]}</span>${withReel&&r?`<span class="rc" data-open="${r.id}">${esc(r.code)} · ${esc(r.title)}</span>`:''}
+      ${studio()?`<button class="eye" data-vis="${a.id}" title="Показать или скрыть от клиента">${a.visible?'👁 видит клиент':'только студия'}</button>`:''}</div>
+      <div class="tx">${esc(a.body)}</div>${media}</div></div>`}
+function renderProc(){
+  const box=$('proc');if(!box)return;const xs=actVis();
+  if(!xs.length){box.innerHTML=`<div class="empty">Здесь появится всё, что студия делает по роликам: сценарии, раскадровки, версии</div>`;$('procMore').hidden=true;return}
+  let html='';
+  if(PF==='reel'){
+    const by={};xs.forEach(a=>{const k=a.reel_id||'_';(by[k]=by[k]||[]).push(a)});
+    html=Object.entries(by).slice(0,ACT_N).map(([k,list])=>{const r=REELS.find(x=>x.id===k);return `<div class="pday"><div class="dl">${r?esc(r.code+' · '+r.title):'Общее'}</div><div class="its">${list.map(a=>actItem(a,false)).join('')}</div></div>`}).join('');
+  }else{
+    const by={};xs.slice(0,ACT_N).forEach(a=>{const d=new Date(a.created_at);const k=iso(d);(by[k]=by[k]||[]).push(a)});
+    const today=iso(new Date()),yest=iso(new Date(Date.now()-864e5));
+    html=Object.entries(by).map(([k,list])=>`<div class="pday"><div class="dl">${k===today?'Сегодня':k===yest?'Вчера':esc(dayLabel(k))}</div><div class="its">${list.map(a=>actItem(a)).join('')}</div></div>`).join('');
+  }
+  box.innerHTML=html;$('procMore').hidden=xs.length<=ACT_N||PF==='reel';
+  box.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>openSheet(x.dataset.open));
+  box.querySelectorAll('[data-vis]').forEach(x=>x.onclick=async()=>{const a=ACT.find(y=>y.id===x.dataset.vis);a.visible=!a.visible;renderProc();
+    const {error}=await sb.from('activity').update({visible:a.visible}).eq('id',a.id);if(error){a.visible=!a.visible;renderProc();fail(error)}else toast(a.visible?'Клиент теперь видит эту запись':'Скрыто от клиента')});
+}
+function stageBar(r){
+  const cur=r.stage&&r.stage!=='note'?r.stage:null;if(!cur&&!ACT.some(a=>a.reel_id===r.id))return '';const i=PIPE.indexOf(cur);
+  const mine=actVis().filter(a=>a.reel_id===r.id);const vers=mine.filter(a=>a.kind==='version'||a.kind==='old').slice().reverse();
+  return `<div class="lbl">Этап</div><div class="stages">${PIPE.map((k,j)=>`<span class="${k===cur?'cur':j<i?'done':''}">${STG[k][0]}</span>`).join('')}</div>
+   ${vers.length>1?`<div class="lbl">Версии</div><div class="vers">${vers.map((a,j)=>`<button data-ver="${esc(a.file_path)}" class="${a.file_path===r.video_path?'on':''}">v${j+1} · ${esc(new Date(a.created_at).toLocaleDateString('ru-RU',{day:'numeric',month:'short'}))}</button>`).join('')}</div>`:''}
+   ${mine.length?`<div class="lbl">Процесс по ролику</div><div class="its" style="display:grid;gap:8px">${mine.slice(0,6).map(a=>actItem(a,false)).join('')}</div>`:''}`}
+document.addEventListener('click',e=>{const f=e.target.closest('[data-pf]');if(f){PF=f.dataset.pf;document.querySelectorAll('[data-pf]').forEach(b=>b.classList.toggle('on',b===f));renderProc()}
+  const v=e.target.closest('[data-ver]');if(v){const u=url(v.dataset.ver);if(u){vid.src=u;vid.play().catch(()=>{});document.querySelectorAll('[data-ver]').forEach(b=>b.classList.toggle('on',b===v))}}
+  if(e.target.id==='procMore'){ACT_N+=40;renderProc()}});
 
 // ── шапка и обзор ──
 function renderHead(){
@@ -840,6 +914,7 @@ function renderSheet(soft){
     <div class="lbl">Статус</div>
     ${st?`<div class="stsel">${ORDER.map(k=>`<button class="${k===r.status?'on':''}" data-st="${k}"><i style="background:${ST[k].c}"></i>${ST[k].t}</button>`).join('')}</div>`
       :`<div class="stsel"><button class="on"><i style="background:${ST[r.status].c}"></i>${ST[r.status].t}</button></div>`}
+    ${stageBar(r)}
     <div class="lbl">Подпись к посту <button class="btn sm" id="copyCap">Скопировать</button></div>
     ${st?`<div class="edit"><div class="row"><input class="field" id="eTitle" value="${esc(r.title)}" placeholder="Название"><input class="field" id="eDay" type="date" value="${esc(r.day||'')}" style="flex:0 1 170px"></div>
       <textarea class="field" id="eCap" placeholder="Подпись и хэштеги">${esc(r.caption||'')}</textarea>
@@ -950,7 +1025,7 @@ $('newReel').onclick=async()=>{
 
 // ── роль и навигация ──
 function placeKnob(sel,on){const el=document.querySelector(sel),b=el&&el.querySelector(on),k=el&&el.querySelector('.knob,.blob');if(!b||!k)return;k.style.left=b.offsetLeft+'px';k.style.width=b.offsetWidth+'px'}
-document.querySelectorAll('#role button').forEach(b=>b.onclick=()=>{VIEW=b.dataset.r;applyRole();renderTasks();renderTG();if(CUR&&sheetOpen())renderSheet()});
+document.querySelectorAll('#role button').forEach(b=>b.onclick=()=>{VIEW=b.dataset.r;applyRole();renderTasks();renderTG();renderProc();if(CUR&&sheetOpen())renderSheet()});
 function applyRole(){document.body.classList.toggle('studio',studio());document.querySelectorAll('#role button').forEach(b=>b.classList.toggle('on',b.dataset.r===VIEW));placeKnob('#role','button.on')}
 function go(id){$(id).scrollIntoView({behavior:'smooth',block:'start'})}
 document.querySelectorAll('#dock button').forEach(b=>b.onclick=()=>go(b.dataset.s));
@@ -1024,12 +1099,12 @@ $('gForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target)
   const {data,error}=await sb.from('guides').insert({client_id:CL.id,keyword:kw,title:String(fd.get('title')).trim(),sort:GUIDES.length+1}).select().single();
   if(error)return fail(error,'Не получилось: такое слово уже есть?');GUIDES.push(data);e.target.reset();renderGuides();toast('Призыв добавлен')};
 
-const secs=['s-home','s-feed','s-tasks','s-reels','s-guides','s-profile','s-cal','s-tg'];
+const secs=['s-home','s-feed','s-proc','s-tasks','s-reels','s-guides','s-profile','s-cal','s-tg'];
 function onScroll(){let cur=secs[0];secs.forEach(s=>{if($(s).getBoundingClientRect().top<window.innerHeight*.4)cur=s});
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));placeKnob('#dock','button.on')}
 window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{onScroll();applyRole()});
 
-function renderAll(full=true){renderStats();renderWall();renderProfile();renderCal();renderFeed();renderGuides();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
+function renderAll(full=true){renderProc();renderStats();renderWall();renderProfile();renderCal();renderFeed();renderGuides();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
 
 // ── старт ──
 (async()=>{
