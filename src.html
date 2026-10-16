@@ -10,6 +10,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=JetBrains+Mono:wght@600&family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /*PROTO_CSS*/
+/* док и верхняя панель без шумового преломления: контент под ними при прокрутке рябил */
+.lg-refract .dock,.lg-refract .top .bar{-webkit-backdrop-filter:blur(14px) saturate(190%);backdrop-filter:blur(14px) saturate(190%)}
 
 @media (min-width:701px){
   .sheet{top:50%;bottom:auto;left:50%;width:min(1240px,calc(100vw - 32px));height:calc(100vh - 48px);max-height:none;border-radius:30px;transform:translate(-50%,-46%) scale(.94);--vo:92px;grid-template-columns:minmax(0,1fr) min(44vw,calc((100vh - var(--vo))*9/16));overflow:hidden}
