@@ -572,6 +572,7 @@ function renderSheet(soft){
       :`<div class="cap">${esc(capBody(r.caption))||'Подпись появится позже'}</div>
     <div class="lbl">Хэштеги</div>
     <div class="tags">${hashtags(r.caption).map(h=>`<span class="tag">${esc(h)}</span>`).join('')||'<span class="empty">Пока нет</span>'}</div>`}
+    ${st?pubBlock(r):''}
     <div class="lbl">Призыв в конце ролика ${r.cta?`<button class="btn sm" id="toGuide">Все гайды</button>`:''}</div>
     ${ctaBlock(r,st)}
     <div class="lbl">Комментарии <span id="cmN" style="letter-spacing:0;text-transform:none;font-weight:600"></span></div>
@@ -592,6 +593,7 @@ function renderSheet(soft){
   if(st){$('eSave').onclick=async()=>{const upd={title:$('eTitle').value.trim(),caption:$('eCap').value,day:$('eDay').value||null};
     const {error}=await sb.from('reels').update(upd).eq('id',r.id);if(error)return fail(error);Object.assign(r,upd);renderAll(false);toast('Сохранено')};
     $('upVid').onchange=e=>uploadVideo(r,e.target.files[0]);$('upPos').onchange=e=>uploadPoster(r,e.target.files[0])}
+  if(st)bindPub(r);
   const inp=$('cmIn'),err=$('cmErr');
   inp.oninput=()=>err.textContent='';
   $('cmGo').onclick=async()=>{const x=inp.value.trim();if(!x){err.textContent='Сначала напишите комментарий';inp.focus();return}
@@ -601,6 +603,35 @@ function renderSheet(soft){
     if(!CMS.find(c=>c.id===data.id))CMS.push(data);CMS.sort((a,b)=>a.t-b.t);inp.value='';renderComments();renderWall();toast('Комментарий к '+fmt(t)+' отправлен')};
   const fx=$('askFix');if(fx)fx.onclick=async()=>{if(r.status==='fix')return;const {error}=await sb.rpc('request_fix',{r:r.id});if(error)return fail(error);r.status='fix';renderSheet();renderAll(false);toast('Ролик '+r.code+' отправлен на доработку. Напишите, что поправить')};
   $('approve').onclick=async()=>{if(!['work','rev','fix','hold'].includes(r.status))return;const {error}=await sb.rpc('approve_reel',{r:r.id});if(error)return fail(error);r.status='ok';renderSheet();renderAll(false);toast('Ролик '+r.code+' одобрен')};
+}
+// Publora: черновик → проверка в Publora → запланировать. Ключ только на сервере (функция publora).
+const PST={draft:'Черновик в Publora',scheduled:'Запланирован в Publora',published:'Опубликован',partially_published:'Опубликован частично',failed:'Ошибка публикации',publishing:'Публикуется'};
+const localDT=d=>{const z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())+'T'+z(d.getHours())+':'+z(d.getMinutes())};
+function pubBlock(r){
+  const s=r.publora_status;const def=r.publora_at?new Date(r.publora_at):r.day?new Date(r.day+'T18:00'):null;
+  return `<div class="lbl">Publora → Instagram</div><div class="ctab" id="pubBox">
+    <div class="ln"><b>${s?esc(PST[s]||s):'Ещё не отправлен'}</b>${r.publora_at&&s==='scheduled'?`<span class="sub">${esc(new Date(r.publora_at).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}))}</span>`:''}
+      ${r.publora_id?`<a class="sub" href="https://app.publora.com/dashboard/posts" target="_blank">открыть Publora ↗</a>`:''}</div>
+    ${r.publora_err?`<div class="err">${esc(r.publora_err)}</div>`:''}
+    ${!r.publora_id?`<div class="sub">Видео, обложка и подпись уйдут в Publora черновиком. В Instagram ничего не выйдет, пока вы не нажмёте «Запланировать».</div>
+      <div class="row"><button class="btn sm lil" id="pubDraft">Отправить черновик в Publora</button></div>`
+     :['draft','scheduled'].includes(s)?`<div class="row"><input class="field" type="datetime-local" id="pubWhen" value="${def?localDT(def):''}">
+      <button class="btn sm pri" id="pubSched">${s==='scheduled'?'Перенести':'Запланировать'}</button><button class="btn sm" id="pubRef">Обновить статус</button></div>
+      <div class="sub">Время ваше местное. После «Запланировать» Publora сама опубликует ролик в Instagram.</div>`
+     :`<div class="row"><button class="btn sm" id="pubRef">Обновить статус</button></div>`}
+  </div>`}
+async function pubCall(r,body,btn){
+  if(btn){btn.disabled=true;btn.dataset.t=btn.textContent;btn.textContent='Секунду…'}
+  const {data,error}=await sb.functions.invoke('publora',{body:{...body,client_id:CL.id,reel_id:r.id}});
+  let msg=data&&data.error;if(error&&!msg){try{msg=(await error.context.json()).error}catch(e){msg=String(error.message||error)}}
+  await loadReels();renderSheet();renderAll(false);
+  if(msg){toast(msg);return null}return data}
+function bindPub(r){
+  const d=$('pubDraft');if(d)d.onclick=async()=>{const x=await pubCall(r,{action:'draft'},d);if(x)toast('Черновик в Publora готов. Проверьте его там')};
+  const sc=$('pubSched');if(sc)sc.onclick=async()=>{const v=$('pubWhen').value;if(!v)return toast('Выберите дату и время');const w=new Date(v);
+    if(!confirm('Запланировать публикацию ролика '+r.code+' в Instagram на '+w.toLocaleString('ru-RU')+'?'))return;
+    const x=await pubCall(r,{action:'schedule',when:w.toISOString()},sc);if(x)toast('Запланировано. Publora опубликует сама')};
+  const rf=$('pubRef');if(rf)rf.onclick=()=>pubCall(r,{action:'status'},rf);
 }
 function renderComments(){
   const r=CUR;if(!r)return;const st=studio();const cm=CMS.filter(c=>c.reel_id===r.id);
