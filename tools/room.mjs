@@ -2,6 +2,9 @@
 //   node room.mjs step <код|-> "что сделано" [--stage board] [--file кадр.png] [--show]
 //   node room.mjs version <код> <файл.mp4> ["что поменялось"]   новая версия → «На проверке», старая остаётся в истории
 //   node room.mjs list [N]
+//   node room.mjs pub <код> [ГГГГ-ММ-ДД] [--late]   ролик вышел (по умолчанию сегодня), встаёт на этот день
+//   node room.mjs sync                       сверка с Publora: вышедшее там → «вышел» в комнате
+//   node room.mjs today                      что по плану сегодня и что не отмечено за прошлые дни
 // Этапы: idea script board anim voice edit review ready publora note.
 // --show = клиент тоже видит запись (по умолчанию только студия). Версии клиент видит всегда.
 import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os';
@@ -72,6 +75,26 @@ if (cmd === 'step') {
   const n = Number(rest[0] || 15);
   const xs = await rest_(`activity?client_id=eq.${CID}&order=created_at.desc&limit=${n}&select=created_at,stage,body,visible,kind,reels(code)`);
   for (const x of xs) console.log(x.created_at.slice(5, 16).replace('T', ' '), (x.reels?.code || '—').padEnd(4), x.stage.padEnd(7), x.visible ? '👁' : '  ', x.body);
+} else if (cmd === 'pub') {
+  const [c, d0] = rest; const reel = await reelBy(c);
+  const day = d0 || new Date(Date.now() - new Date().getTimezoneOffset() * 60e3).toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error('дата: ГГГГ-ММ-ДД');
+  // кто стоял на этот день и не вышел, освобождает место (дата снимается, ролик возвращается в очередь)
+  const others = await rest_(`reels?client_id=eq.${CID}&day=eq.${day}&status=neq.pub&id=neq.${reel.id}&publora_status=is.null&select=id,code`);
+  await rest_(`reels?id=eq.${reel.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'pub', day }) });
+  await rest_('activity', { method: 'POST', body: JSON.stringify({ client_id: CID, reel_id: reel.id, stage: 'publora', body: `Вышел в Instagram ${day}`, visible: true }) });
+  for (const o of others) await rest_(`reels?id=eq.${o.id}`, { method: 'PATCH', body: JSON.stringify({ day: null, week: null }) });
+  console.log(`ok · ${reel.code} вышел ${day}${others.length ? ' · сняты с дня: ' + others.map(o => o.code).join(', ') : ''}`);
+} else if (cmd === 'sync') {
+  const res = await fetch(`${URLB}/functions/v1/publora`, { method: 'POST', headers: A, body: JSON.stringify({ action: 'sync', client_id: CID, tz: new Date().getTimezoneOffset() }) });
+  const b = await res.json(); if (!res.ok) throw new Error(b.error || res.status);
+  console.log(`Publora: постов ${b.checked}; обновлено: ${b.done.join(', ') || 'ничего'}`);
+  for (const u of b.unmatched) console.log(`  без ролика: ${u.status} ${String(u.at).slice(0, 16)} «${u.text}»`);
+} else if (cmd === 'today') {
+  const t = new Date(Date.now() - new Date().getTimezoneOffset() * 60e3).toISOString().slice(0, 10);
+  const xs = await rest_(`reels?client_id=eq.${CID}&day=lte.${t}&day=gte.2026-10-15&order=day&select=code,title,day,status,publora_status`);
+  for (const x of xs) console.log(x.day, x.code.padEnd(4), x.status === 'pub' ? '✓ вышел' : x.publora_status === 'scheduled' ? 'в Publora' : x.day === t ? '? сегодня' : '✗ не отмечен', x.title);
+  if (!xs.some(x => x.day === t)) console.log(t, '— на сегодня ничего не стоит');
 } else {
-  console.log('команды: step | version | list');
+  console.log('команды: step | version | list | pub | sync | today');
 }

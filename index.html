@@ -378,6 +378,12 @@ body.studio .gd .ge{display:grid}
 .pick h5{margin:0 0 4px;font-size:13px}.pick .sub{font-size:12px}
 .pick button.it{display:grid;grid-template-columns:40px 1fr;gap:8px;text-align:left;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.55);color:var(--ink);font-size:13px;cursor:pointer}
 .pick button.it:hover{background:#fff}.pick button.it b{font-weight:800}.pick button.it small{grid-column:2;color:var(--muted);font-size:11px}
+.chk{display:grid;gap:10px}
+.chk .q{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;border-radius:18px}
+.chk .q .d{font-weight:800;font-size:13px;min-width:70px}.chk .q .t{font-size:14px}.chk .q .t small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.chk .q .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chk .ok{font-size:13px;color:var(--muted);padding:6px 2px}
+@media(max-width:640px){.chk .q{grid-template-columns:1fr}.chk .q .acts{justify-content:flex-start}}
 /* стратегия */
 .strat{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:18px;align-items:start}
 @media(max-width:900px){.strat{grid-template-columns:1fr}}
@@ -485,6 +491,12 @@ body.studio .gd .ge{display:grid}
       </div>
       <div class="stats" id="stats"></div>
     </div>
+  </section>
+
+  <section id="s-check" class="studio-only">
+    <div class="sh"><div><div class="eyebrow">Календарь = как было на самом деле · Publora сверяется сама</div><h2>Вышло <em>по плану?</em></h2></div>
+      <div class="filters"><button class="chip" id="chkSync">Сверить с Publora</button></div></div>
+    <div class="chk" id="chk"></div>
   </section>
 
   <section id="s-feed">
@@ -744,6 +756,7 @@ async function start(){
   W=currentWeek()?.id||CL.weeks[0]?.id;
   renderHead();renderAll();applyRole();setTimeout(onScroll,50);
   subscribe();
+  if(ME.role==='studio')syncPublora(true);
 }
 
 // ── живые обновления ──
@@ -762,16 +775,64 @@ function subscribe(){
     .subscribe();
 }
 
+// ── сверка с планом: прошедшие дни и сегодня, где ролик стоял, но не отмечен ──
+const CHK_FROM='2026-10-15';
+const tdy=()=>iso(new Date());
+function chkDays(){
+  const t=tdy(),out=[];
+  for(let d=new Date(CHK_FROM+'T12:00');iso(d)<=t;d.setDate(d.getDate()+1)){
+    const D=iso(d),on=REELS.filter(r=>r.day===D);
+    const open=on.filter(r=>r.status!=='pub'&&r.publora_status!=='scheduled');
+    if(open.length)open.forEach(r=>out.push({D,r}));
+    else if(D===t&&!on.length)out.push({D,r:null});
+  }
+  return out.reverse();
+}
+$('chkSync')&&($('chkSync').onclick=()=>syncPublora(false));
+function renderCheck(){
+  const el=$('chk');if(!el)return;const xs=chkDays(),t=tdy();
+  el.innerHTML=xs.length?xs.map(({D,r})=>`<div class="q glass"><div class="d">${D===t?'Сегодня':esc(dayLabel(D))}</div>
+    <div class="t">${r?`По плану <b>${esc(r.code)}</b> · ${esc(r.title)}<small>Ролик вышел?</small>`:`На сегодня ничего не стоит<small>Если что-то вышло, отметьте</small>`}</div>
+    <div class="acts">${r?`<button class="btn sm pri" data-ck="yes" data-r="${r.id}" data-d="${D}">✓ Вышел</button><button class="btn sm" data-ck="no" data-r="${r.id}" data-d="${D}">Не вышел</button>`:''}
+    <button class="btn sm" data-ck="other" data-r="${r?.id||''}" data-d="${D}">${r?'Вышел другой':'Вышел ролик…'}</button></div></div>`).join('')
+    :`<div class="ok">Всё сходится: всё, что стояло по плану до сегодня, отмечено ✓</div>`;
+  el.querySelectorAll('[data-ck]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=REELS.find(x=>x.id===b.dataset.r),D=b.dataset.d;
+    if(b.dataset.ck==='yes')markPub(r,D);
+    else if(b.dataset.ck==='no')unplan(r,`Ролик ${r.code} не вышел, вернулся в очередь. «Разложить» в Стратегии поставит его заново`);
+    else pickFor(D,b,x=>markPub(x,D,r))});
+}
+// ролик вышел в день D; если вместо него стоял другой, тот возвращается в очередь
+async function markPub(r,D,instead){
+  const {error}=await sb.from('reels').update({status:'pub',day:D}).eq('id',r.id);if(error)return fail(error,'Не получилось отметить');
+  await sb.from('activity').insert({client_id:CL.id,reel_id:r.id,stage:'publora',body:`Вышел в Instagram ${D}`,visible:true});
+  if(instead&&instead.id!==r.id)await sb.from('reels').update({day:null,week:null}).eq('id',instead.id);
+  tick(660);toast(`✓ ${r.code} вышел ${dayLabel(D)}`);await Promise.all([loadReels(),loadAct()]);renderAll(false);
+}
+async function unplan(r,msg){
+  const {error}=await sb.from('reels').update({day:null,week:null}).eq('id',r.id);if(error)return fail(error,'Не получилось');
+  toast(msg);await loadReels();renderAll(false);
+}
+let syncing=false;
+async function syncPublora(quiet){
+  if(syncing)return;syncing=true;const b=$('chkSync');if(b){b.disabled=true;b.textContent='Сверяю…'}
+  const {data,error}=await sb.functions.invoke('publora',{body:{action:'sync',client_id:CL.id,tz:new Date().getTimezoneOffset()}});
+  syncing=false;if(b){b.disabled=false;b.textContent='Сверить с Publora'}
+  let msg=data&&data.error;if(error&&!msg){try{msg=(await error.context.json()).error}catch(e){msg=String(error.message||error)}}
+  if(msg){if(!quiet)toast(msg);return}
+  if(data.done.length){await Promise.all([loadReels(),loadAct()]);renderAll(false)}
+  if(!quiet||data.done.length)toast(data.done.length?'Из Publora: '+data.done.join(', '):'Publora: всё сходится');
+}
+
 // выбор ролика на день: сначала без даты, потом по очереди стратегии
-function pickFor(D,anchor){
+function pickFor(D,anchor,cb){
   document.querySelector('.pick')?.remove();
   const q=REELS.filter(r=>r.status!=='pub'&&r.publora_status!=='scheduled'&&r.day!==D).sort((a,b)=>(!!a.day-!!b.day)||(a.sort??0)-(b.sort??0));
   const el=document.createElement('div');el.className='pick glass';
-  el.innerHTML=`<h5>Поставить на ${esc(dayLabel(D))}</h5><div class="sub">Ролики без даты сверху. Если у ролика уже есть дата, он переедет сюда</div>`+
+  el.innerHTML=(cb?`<h5>Какой ролик вышел ${esc(dayLabel(D))}?</h5><div class="sub">Он встанет на этот день с отметкой «вышел»</div>`:`<h5>Поставить на ${esc(dayLabel(D))}</h5><div class="sub">Ролики без даты сверху. Если у ролика уже есть дата, он переедет сюда</div>`)+
     q.map(r=>`<button class="it" data-pk="${r.id}"><b>${esc(r.code)}</b><span>${esc(r.title)}</span><small>${r.day?'сейчас: '+esc(dayLabel(r.day)):'без даты'}</small></button>`).join('');
   document.body.appendChild(el);
   const b=anchor.getBoundingClientRect();el.style.left=Math.max(16,Math.min(b.left,innerWidth-el.offsetWidth-16))+'px';el.style.top=Math.max(16,Math.min(b.bottom+6,innerHeight-el.offsetHeight-16))+'px';
-  el.querySelectorAll('[data-pk]').forEach(x=>x.onclick=async()=>{const r=REELS.find(y=>y.id===x.dataset.pk);const old=r.day;r.day=D;el.remove();tick(520);renderCal();renderWall();renderStrat();
+  el.querySelectorAll('[data-pk]').forEach(x=>x.onclick=async()=>{const r=REELS.find(y=>y.id===x.dataset.pk);if(cb){el.remove();return cb(r)}const old=r.day;r.day=D;el.remove();tick(520);renderCal();renderWall();renderStrat();
     const {error}=await sb.rpc('move_reel',{r:r.id,d:D});if(error){r.day=old;renderCal();renderWall();renderStrat();fail(error,'Не получилось поставить')}else toast(`Ролик ${r.code} стоит на ${dayLabel(D)}`)});
   setTimeout(()=>document.addEventListener('click',function off(e){if(!el.contains(e.target)){el.remove();document.removeEventListener('click',off)}}),0);
 }
@@ -1246,7 +1307,7 @@ function onScroll(){let cur=secs[0];secs.forEach(s=>{if($(s).getBoundingClientRe
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));placeKnob('#dock','button.on')}
 window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{onScroll();applyRole()});
 
-function renderAll(full=true){renderProc();renderStrat();renderStats();renderWall();renderProfile();renderCal();renderFeed();renderGuides();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
+function renderAll(full=true){renderCheck();renderProc();renderStrat();renderStats();renderWall();renderProfile();renderCal();renderFeed();renderGuides();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
 
 // ── старт ──
 (async()=>{
