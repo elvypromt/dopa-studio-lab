@@ -5,6 +5,8 @@
 //   node room.mjs pub <код> [ГГГГ-ММ-ДД] [--late]   ролик вышел (по умолчанию сегодня), встаёт на этот день
 //   node room.mjs sync                       сверка с Publora: вышедшее там → «вышел» в комнате
 //   node room.mjs today                      что по плану сегодня и что не отмечено за прошлые дни
+//   node room.mjs idea "текст" [--tag idea|check|todo|note] [--pin] [--reel код]   заметка в Мастерскую (видит только студия)
+//   node room.mjs ideas                      что лежит в Мастерской
 // Этапы: idea script board anim voice edit review ready publora note.
 // --show = клиент тоже видит запись (по умолчанию только студия). Версии клиент видит всегда.
 import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os';
@@ -21,7 +23,7 @@ const TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg'
 
 const argv = process.argv.slice(2);
 const flag = (n) => { const i = argv.indexOf('--' + n); if (i < 0) return null; const v = argv[i + 1]; argv.splice(i, v && !v.startsWith('--') ? 2 : 1); return v && !v.startsWith('--') ? v : true; };
-const stageArg = flag('stage'), fileArg = flag('file'), show = !!flag('show');
+const stageArg = flag('stage'), fileArg = flag('file'), show = !!flag('show'), tagArg = flag('tag'), pinArg = !!flag('pin'), reelArg = flag('reel');
 const [cmd, ...rest] = argv;
 
 const h = { apikey: KEY, 'Content-Type': 'application/json' };
@@ -95,6 +97,15 @@ if (cmd === 'step') {
   const xs = await rest_(`reels?client_id=eq.${CID}&day=lte.${t}&day=gte.2026-10-15&order=day&select=code,title,day,status,publora_status`);
   for (const x of xs) console.log(x.day, x.code.padEnd(4), x.status === 'pub' ? '✓ вышел' : x.publora_status === 'scheduled' ? 'в Publora' : x.day === t ? '? сегодня' : '✗ не отмечен', x.title);
   if (!xs.some(x => x.day === t)) console.log(t, '— на сегодня ничего не стоит');
+} else if (cmd === 'idea') {
+  const [body] = rest; if (!body) throw new Error('нужен текст');
+  const tag = tagArg || 'idea'; if (!['idea', 'check', 'todo', 'note'].includes(tag)) throw new Error('tag: idea check todo note');
+  const reel = reelArg ? await reelBy(reelArg) : null;
+  const [n] = await rest_('notes', { method: 'POST', body: JSON.stringify({ client_id: CID, body, tag, pinned: pinArg, reel_id: reel?.id || null }) });
+  console.log(`ok · Мастерская · ${tag}${pinArg ? ' · 📌' : ''} · ${n.id}`);
+} else if (cmd === 'ideas') {
+  const xs = await rest_(`notes?client_id=eq.${CID}&archived=eq.false&order=pinned.desc,created_at.desc&select=created_at,tag,pinned,done,body`);
+  for (const x of xs) console.log(x.created_at.slice(5, 10), x.tag.padEnd(5), x.pinned ? '📌' : '  ', x.done ? '✓' : ' ', x.body.replace(/\n/g, ' ').slice(0, 120));
 } else {
-  console.log('команды: step | version | list | pub | sync | today');
+  console.log('команды: step | version | list | pub | sync | today | idea | ideas');
 }
