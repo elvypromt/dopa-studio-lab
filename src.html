@@ -81,6 +81,7 @@
 .ai .msg{white-space:pre-wrap;line-height:1.45;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.55)}
 .ai .msg.me{background:rgba(156,134,217,.18);justify-self:end;max-width:88%}
 .ai .busy{opacity:.6}
+.cvai{display:flex;gap:8px;flex-wrap:wrap}.cvai .field{flex:1 1 260px}.cvopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cvopt{display:grid;gap:6px;align-content:start}.cvopt canvas{width:100%;height:auto;aspect-ratio:9/16;border-radius:12px;background:#070708}.cvopt .why{font-size:12.5px;line-height:1.35;color:var(--body)}
 .cvwrap{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:start}
 .cvwrap canvas{width:150px;height:auto;aspect-ratio:9/16;border-radius:12px;background:#070708}
 @media(max-width:520px){.cvwrap{grid-template-columns:1fr}.cvwrap canvas{width:60%}}
@@ -921,7 +922,7 @@ function renderSheet(soft){
       :`<div class="cap">${esc(capBody(r.caption))||'Подпись появится позже'}</div>
     <div class="lbl">Хэштеги</div>
     <div class="tags">${hashtags(r.caption).map(h=>`<span class="tag">${esc(h)}</span>`).join('')||'<span class="empty">Пока нет</span>'}</div>`}
-    ${st?aiBlock(r)+coverBlock(r):''}
+    ${st?aiBlock(r)+`<div id="cvBox">${coverBlock(r)}</div>`:''}
     ${st?pubBlock(r):''}
     <div class="lbl">Призыв в конце ролика ${r.cta?`<button class="btn sm" id="toGuide">Все гайды</button>`:''}</div>
     ${ctaBlock(r,st)}
@@ -1064,12 +1065,23 @@ async function aiRun(r,body){
 
 // ── обложка из кадра ролика: тёмная, белый заголовок, зелёная плашка, официальный логотип ──
 const COV={};let LOGO_W=null;
-function coverBlock(r){const c=COV[r.id]||{};
-  return `<div class="lbl">Сделать обложку</div><div class="ctab"><div class="cvwrap"><canvas id="cv" width="1080" height="1920"></canvas><div style="display:grid;gap:8px">
-    <input class="field" id="cvTag" placeholder="Рубрика" value="${esc(c.tag??(r.theme||'').toUpperCase())}">
-    <textarea class="field" id="cvH" rows="3" placeholder="Заголовок (перенос строки = Enter)">${esc(c.h??r.title)}</textarea>
-    <input class="field" id="cvS" placeholder="Зелёная плашка (необязательно), напр. Stop it." value="${esc(c.s||'')}">
-    <div class="sub">Кадр берётся с текущей секунды видео выше: поставьте на паузу где нравится.</div>
+const CVL={low:'Текст внизу',top:'Текст вверху',big:'Большая цифра'};
+function covState(r){return COV[r.id]||(COV[r.id]={layout:'low',tag:(r.theme||'').toUpperCase(),h:r.title,accent:'',s:'',big:'',lines:'',useFrame:true})}
+function coverBlock(r){const c=covState(r);
+  return `<div class="lbl">Сделать обложку</div><div class="ctab">
+    <div class="cvai"><input class="field" id="cvWish" placeholder="Пожелание для ИИ: например, «про агентства», «смешнее», «с цифрой»" value="${esc(c.wish||'')}"><button class="btn sm lil" id="cvAI">${c.busy?'Думаю…':'✨ ИИ: 3 обложки в стиле серии'}</button></div>
+    <div class="sub">ИИ видит эталонную серию (About us, Works with, Pricing, How to use, IG formats), уже вышедшие обложки, соседей по календарю и текущий кадр видео. Предлагает разные композиции, чтобы соседние обложки не сливались.</div>
+    ${c.err?`<div class="sub" style="color:#b4235a">${esc(c.err)}</div>`:''}
+    ${c.opts&&c.opts.length?`<div class="cvopts">${c.opts.map((o,i)=>`<div class="cvopt"><canvas width="1080" height="1920" data-cvo="${i}"></canvas><div class="sub">${esc(CVL[o.layout]||o.layout||'')}${o.frame?' · с кадром':''}</div><div class="why">${esc(o.why||'')}</div><button class="btn sm lil" data-cvtake="${i}">Взять</button></div>`).join('')}</div>`:''}
+    <div class="cvwrap"><canvas id="cv" width="1080" height="1920"></canvas><div style="display:grid;gap:8px">
+    <div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(CVL).map(([k,v])=>`<button class="btn sm ${c.layout===k?'lil':''}" data-cvl="${k}">${v}</button>`).join('')}</div>
+    <input class="field" id="cvTag" placeholder="Рубрика (маленькая плашка), напр. PRICING" value="${esc(c.tag||'')}">
+    <textarea class="field" id="cvH" rows="2" placeholder="Заголовок (перенос строки = Enter)">${esc(c.h||'')}</textarea>
+    <input class="field" id="cvA" placeholder="Зелёное слово из заголовка (необязательно)" value="${esc(c.accent||'')}">
+    ${c.layout==='big'?`<input class="field" id="cvB" placeholder="Большая цифра/слово, напр. $0 или 10" value="${esc(c.big||'')}">`:''}
+    <textarea class="field" id="cvL" rows="2" placeholder="Строки «→» мелким шрифтом, каждая с новой строки">${esc(c.lines||'')}</textarea>
+    <input class="field" id="cvS" placeholder="Зелёная плашка (редко), напр. Stop it." value="${esc(c.s||'')}">
+    <div class="sub">Кадр берётся с текущей секунды видео: поставьте на паузу где нравится.</div>
     <div class="row" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" id="cvFrame">Взять кадр</button><button class="btn sm" id="cvNo">Без кадра</button><button class="btn sm lil" id="cvSave">Поставить обложкой</button></div>
   </div></div></div>`}
 async function grabFrame(){
@@ -1080,32 +1092,77 @@ async function grabFrame(){
       g.drawImage(v,(1080-v.videoWidth*s)/2,(1920-v.videoHeight*s)/2,v.videoWidth*s,v.videoHeight*s);res(c)};
     v.onerror=()=>res(null)})}
 function wrapLines(g,text,max){const out=[];for(const para of text.split('\n')){let cur='';for(const w of para.split(/\s+/).filter(Boolean)){const t=cur?cur+' '+w:w;if(g.measureText(t).width>max&&cur){out.push(cur);cur=w}else cur=t}out.push(cur)}return out}
-async function drawCover(r){
-  const cv=$('cv');if(!cv)return;const c=COV[r.id]||(COV[r.id]={});const g=cv.getContext('2d');
+const GRN='#2FD27A',INK='#070708';
+// строка заголовка: слова из accent — зелёные
+function hLine(g,line,x,y,acc,align){const ws=line.split(' ');const sp=g.measureText(' ').width;const W=g.measureText(line).width;let cx=align==='center'?x-W/2:x;
+  for(const w of ws){const k=w.toLowerCase().replace(/[^\p{L}\p{N}$%]/gu,'');g.fillStyle=k&&acc.has(k)?GRN:'#fff';g.fillText(w,cx,y);cx+=g.measureText(w).width+sp}}
+function pill(g,tag,x,y,align){g.font='600 28px "JetBrains Mono"';g.letterSpacing='6px';const tw=g.measureText(tag).width+76;const x0=align==='center'?x-tw/2:x;
+  g.letterSpacing='0px';g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.roundRect(x0,y-31,tw,62,31);g.fill();
+  g.fillStyle=GRN;g.beginPath();g.arc(x0+30,y,8,0,7);g.fill();g.fillStyle='#e6e6ec';g.letterSpacing='6px';g.textBaseline='middle';g.fillText(tag,x0+54,y+2);g.letterSpacing='0px';g.textBaseline='alphabetic'}
+function monoLines(g,ls,x,y,align){g.font='600 36px "JetBrains Mono"';ls.forEach((l,i)=>{const t='→ '+l;const W=g.measureText(t).width;const x0=align==='center'?x-W/2:x;
+  g.fillStyle=GRN;g.fillText('→',x0,y+i*58);g.fillStyle='#d6d6dc';g.fillText(l,x0+g.measureText('→ ').width,y+i*58)});return y+ls.length*58}
+async function drawCoverTo(cv,c,frame){
+  const g=cv.getContext('2d');
   await Promise.all([document.fonts.load('800 100px "Bricolage Grotesque"'),document.fonts.load('600 28px "JetBrains Mono"')]).catch(()=>{});
   if(!LOGO_W){LOGO_W=new Image();LOGO_W.src='brand/publora_logo_white.svg';await LOGO_W.decode().catch(()=>{})}
-  g.fillStyle='#070708';g.fillRect(0,0,1080,1920);
-  if(c.frame){g.drawImage(c.frame,0,0);const gr=g.createLinearGradient(0,0,0,1920);gr.addColorStop(0,'rgba(7,7,8,.35)');gr.addColorStop(.45,'rgba(7,7,8,.55)');gr.addColorStop(.62,'rgba(7,7,8,.92)');gr.addColorStop(1,'rgba(7,7,8,.97)');g.fillStyle=gr;g.fillRect(0,0,1080,1920)}
+  const L0=c.layout||'low';g.textAlign='left';g.letterSpacing='0px';
+  g.fillStyle=INK;g.fillRect(0,0,1080,1920);
+  if(frame){g.drawImage(frame,0,0);const gr=g.createLinearGradient(0,0,0,1920);
+    if(L0==='top'){gr.addColorStop(0,'rgba(7,7,8,.97)');gr.addColorStop(.38,'rgba(7,7,8,.9)');gr.addColorStop(.6,'rgba(7,7,8,.45)');gr.addColorStop(.85,'rgba(7,7,8,.75)');gr.addColorStop(1,'rgba(7,7,8,.97)')}
+    else if(L0==='big'){gr.addColorStop(0,'rgba(7,7,8,.88)');gr.addColorStop(1,'rgba(7,7,8,.92)')}
+    else{gr.addColorStop(0,'rgba(7,7,8,.35)');gr.addColorStop(.45,'rgba(7,7,8,.55)');gr.addColorStop(.62,'rgba(7,7,8,.92)');gr.addColorStop(1,'rgba(7,7,8,.97)')}
+    g.fillStyle=gr;g.fillRect(0,0,1080,1920)}
   else{g.strokeStyle='rgba(255,255,255,.04)';g.lineWidth=1;for(let x=0;x<=1080;x+=120){g.beginPath();g.moveTo(x+.5,0);g.lineTo(x+.5,1920);g.stroke()}for(let y=0;y<=1920;y+=120){g.beginPath();g.moveTo(0,y+.5);g.lineTo(1080,y+.5);g.stroke()}}
-  const tag=$('cvTag').value.trim(),h=$('cvH').value.trim(),sl=$('cvS').value.trim();
-  let size=110;g.font=`800 ${size}px "Bricolage Grotesque"`;let L=wrapLines(g,h,920);
-  while((L.length*size*1.0>440||L.some(l=>g.measureText(l).width>920))&&size>64){size-=6;g.font=`800 ${size}px "Bricolage Grotesque"`;L=wrapLines(g,h,920)}
-  const top=sl?1000:1080,y0=top+90;
-  if(tag){g.font='600 28px "JetBrains Mono"';const tw=g.measureText(tag).width+6*tag.length;g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.roundRect(80,top-50,tw+76,62,31);g.fill();
-    g.fillStyle='#2FD27A';g.beginPath();g.arc(110,top-19,8,0,7);g.fill();g.fillStyle='#e6e6ec';g.letterSpacing='6px';g.textBaseline='middle';g.fillText(tag,134,top-17);g.letterSpacing='0px'}
-  g.textBaseline='alphabetic';g.fillStyle='#fff';g.font=`800 ${size}px "Bricolage Grotesque"`;g.letterSpacing=`${-size*.04}px`;
-  L.forEach((l,i)=>g.fillText(l,76,y0+i*size*.98));g.letterSpacing='0px';
-  if(sl){const sy=y0+L.length*size*.98+30;g.font='800 120px "Bricolage Grotesque"';g.letterSpacing='-5px';const w=g.measureText(sl).width+60;
-    g.save();g.translate(80,sy);g.rotate(-2.5*Math.PI/180);g.shadowColor='rgba(47,210,122,.55)';g.shadowBlur=70;g.fillStyle='#2FD27A';g.beginPath();g.roundRect(0,0,w,150,24);g.fill();
-    g.shadowBlur=0;g.fillStyle='#070708';g.fillText(sl,28,112);g.restore();g.letterSpacing='0px'}
+  const tag=(c.tag||'').trim(),h=(c.h||'').trim(),sl=(c.s||'').trim(),big=(c.big||'').trim();
+  const ls=String(c.lines||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,3);
+  const acc=new Set(String(c.accent||'').toLowerCase().split(/\s+/).map(w=>w.replace(/[^\p{L}\p{N}$%]/gu,'')).filter(Boolean));
+  const fit=(maxH,maxW,s0)=>{let size=s0;g.font=`800 ${size}px "Bricolage Grotesque"`;let L=wrapLines(g,h,maxW);
+    while((L.length*size>maxH||L.some(l=>g.measureText(l).width>maxW))&&size>60){size-=6;g.font=`800 ${size}px "Bricolage Grotesque"`;L=wrapLines(g,h,maxW)}return [size,L]};
+  const head=(size,L,x,y,align)=>{g.font=`800 ${size}px "Bricolage Grotesque"`;g.letterSpacing=`${-size*.04}px`;L.forEach((l,i)=>hLine(g,l,x,y+i*size*.98,acc,align));g.letterSpacing='0px';return y+(L.length-1)*size*.98};
+  const slab=(y)=>{g.font='800 120px "Bricolage Grotesque"';g.letterSpacing='-5px';const w=g.measureText(sl).width+60;
+    g.save();g.translate(80,y);g.rotate(-2.5*Math.PI/180);g.shadowColor='rgba(47,210,122,.55)';g.shadowBlur=70;g.fillStyle=GRN;g.beginPath();g.roundRect(0,0,w,150,24);g.fill();
+    g.shadowBlur=0;g.fillStyle=INK;g.fillText(sl,28,112);g.restore();g.letterSpacing='0px';return y+170};
+  if(L0==='big'){
+    if(tag)pill(g,tag,540,330,'center');
+    let bs=600;const bf=()=>{g.font=`800 ${bs}px "Bricolage Grotesque"`;g.letterSpacing=`${-bs*.05}px`};bf();while(g.measureText(big).width>940&&bs>160){bs-=20;bf()}
+    const by=420+bs*.8,W=g.measureText(big).width;let bx=540-W/2;g.shadowColor='rgba(47,210,122,.45)';g.shadowBlur=60;
+    const accb=String(c.accent||''),inBig=accb&&[...big].some(ch=>accb.includes(ch)),allD=/^[\d.,:]+$/.test(big);
+    for(const ch of big){g.fillStyle=inBig?(accb.includes(ch)?GRN:'#fff'):allD?GRN:(/[\d.,:]/.test(ch)?'#fff':GRN);g.fillText(ch,bx,by);bx+=g.measureText(ch).width}
+    g.shadowBlur=0;g.letterSpacing='0px';let y=by+60;
+    if(h){const [size,L]=fit(260,920,100);y=head(size,L,540,y+size*.8,'center')+40}
+    if(ls.length)monoLines(g,ls,540,y+40,'center');
+  }else if(L0==='top'){
+    let y=330;if(tag){pill(g,tag,80,y,'left');y+=120}else y=360;
+    const [size,L]=fit(sl?380:520,920,124);y=head(size,L,76,y+size*.72,'left')+40;
+    if(sl)y=slab(y)+20;if(ls.length)monoLines(g,ls,82,y+36,'left');
+  }else{
+    const [size,L]=fit(440,920,110);const bodyH=(tag?90:0)+L.length*size*.98+(sl?190:0)+(ls.length?ls.length*58+30:0);
+    let y=Math.max(820,1500-bodyH);if(tag){pill(g,tag,80,y,'left');y+=70}
+    y=head(size,L,76,y+size*.8,'left')+30;if(sl)y=slab(y);if(ls.length)monoLines(g,ls,82,y+40,'left');
+  }
   if(LOGO_W&&LOGO_W.naturalWidth&&CL.slug==='publora')g.drawImage(LOGO_W,80,1545,300,300*253/917);
-  g.font='600 30px "JetBrains Mono"';g.fillStyle='#cfcfd6';g.textAlign='right';g.fillText('publora.com',1000,1600);g.textAlign='left';
+  g.font='600 30px "JetBrains Mono"';g.fillStyle='#cfcfd6';g.textAlign='right';g.fillText('publora.com →',1000,1600);g.textAlign='left';
 }
+async function drawCover(r){const cv=$('cv');if(!cv)return;const c=covState(r);await drawCoverTo(cv,c,c.useFrame?c.frame:null)}
+function frameB64(f){const s=document.createElement('canvas');s.width=432;s.height=768;s.getContext('2d').drawImage(f,0,0,432,768);try{return s.toDataURL('image/jpeg',.7)}catch(e){return null}}
+async function coverAI(r){const c=covState(r);if(c.busy)return;c.wish=$('cvWish').value.trim();c.busy=true;c.err='';rerenderCover(r);
+  if(!c.frame&&(vid.currentSrc||vid.src)){const f=await grabFrame();if(f)c.frame=f}
+  const {data,error}=await sb.functions.invoke('ai',{body:{mode:'cover',client_id:CL.id,reel_id:r.id,note:c.wish,frame:c.frame?frameB64(c.frame):null}});
+  c.busy=false;let msg=error?(await error.context?.json?.().catch(()=>null))?.error||error.message:data?.error;
+  if(msg)c.err=msg;else c.opts=(data.options||[]).filter(o=>o&&typeof o==='object');
+  if(!msg&&!c.opts.length)c.err='ИИ ответил не по формату, попробуйте ещё раз';
+  if(CUR&&CUR.id===r.id)rerenderCover(r)}
+function rerenderCover(r){const box=$('cvBox');if(!box)return;box.innerHTML=coverBlock(r);bindCover(r)}
+function takeOpt(c,o){Object.assign(c,{layout:o.layout||'low',tag:o.tag||'',h:o.h||'',accent:o.accent||'',s:o.slab||'',big:o.big||'',lines:(o.lines||[]).join('\n'),useFrame:!!o.frame})}
 function bindCover(r){
-  const c=COV[r.id]||(COV[r.id]={});const re=()=>{c.tag=$('cvTag').value;c.h=$('cvH').value;c.s=$('cvS').value;drawCover(r)};
-  ['cvTag','cvH','cvS'].forEach(i=>$(i).oninput=re);
-  $('cvFrame').onclick=async()=>{const b=$('cvFrame');b.disabled=true;const f=await grabFrame();b.disabled=false;if(!f)return toast('Кадр не взялся: сначала загрузите видео');c.frame=f;drawCover(r)};
-  $('cvNo').onclick=()=>{c.frame=null;drawCover(r)};
+  const c=covState(r);const re=()=>{c.tag=$('cvTag').value;c.h=$('cvH').value;c.accent=$('cvA').value;c.s=$('cvS').value;c.lines=$('cvL').value;if($('cvB'))c.big=$('cvB').value;drawCover(r)};
+  ['cvTag','cvH','cvA','cvS','cvL','cvB'].forEach(i=>{if($(i))$(i).oninput=re});
+  $('cvWish').oninput=e=>c.wish=e.target.value;$('cvWish').onkeydown=e=>{if(e.key==='Enter')coverAI(r)};$('cvAI').onclick=()=>coverAI(r);
+  document.querySelectorAll('[data-cvl]').forEach(b=>b.onclick=()=>{c.layout=b.dataset.cvl;rerenderCover(r)});
+  document.querySelectorAll('[data-cvo]').forEach(cv=>{const o=c.opts[+cv.dataset.cvo];const t={};takeOpt(t,o);drawCoverTo(cv,t,t.useFrame?c.frame:null)});
+  document.querySelectorAll('[data-cvtake]').forEach(b=>b.onclick=()=>{takeOpt(c,c.opts[+b.dataset.cvtake]);rerenderCover(r);toast('Вариант в редакторе: можно поправить и поставить обложкой')});
+  $('cvFrame').onclick=async()=>{const b=$('cvFrame');b.disabled=true;const f=await grabFrame();b.disabled=false;if(!f)return toast('Кадр не взялся: сначала загрузите видео');c.frame=f;c.useFrame=true;drawCover(r)};
+  $('cvNo').onclick=()=>{c.useFrame=false;drawCover(r)};
   $('cvSave').onclick=async()=>{const cv=$('cv');let blob;try{blob=await new Promise(res=>cv.toBlob(res,'image/jpeg',.9))}catch(e){return toast('Не получилось сохранить кадр')}
     if(!confirm('Поставить эту картинку обложкой ролика '+r.code+'?'))return;
     await uploadPoster(r,new File([blob],'cover.jpg',{type:'image/jpeg'}))};

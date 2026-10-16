@@ -1,4 +1,4 @@
-// ИИ внутри комнаты: варианты подписи, хука, хэштегов и чат по ролику. Только студия.
+// ИИ внутри комнаты: варианты подписи, хука, хэштегов, ответов, обложки (видит эталонную серию и соседние обложки) и чат по ролику. Только студия.
 // Ключ — секрет ANTHROPIC_API_KEY, в браузер не уходит. В базу ничего не пишет: что применить, решает человек.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -34,6 +34,11 @@ Return JSON only: {"reply":"...","body":"..."}`,
   dm: `People comment the keyword under the reel and get an automatic Instagram DM with the guide. Using the brief below, write 3 different DM texts (English, 200–450 characters each; variant 1 warm and simple, variant 2 playful, variant 3 short and to the point). Each: thanks them, 1 line on what's inside, the placeholder [LINK] on its own line, one soft line about trying Publora free in the browser. No hashtags. Return JSON only: {"options":["...","...","..."]}`,
   reply: `Someone wrote to @publoramcp (the message and where it came from are below). Write 5 different replies in English, as the Publora team: human, warm, a bit playful, never salesy. Comment replies: max 150 characters, no links (say "link in bio" or "check your DMs" only if it fits). DM replies: max 400 characters, may end with a soft question. If they ask something not covered by the facts, answer honestly and offer to check with the team; never invent features, prices or numbers. Always reply in English. Return JSON only: {"options":["..."]}`,
   broadcast: `Write 3 different broadcast messages in English for Publora's followers (Instagram broadcast channel / DM to subscribers / Telegram channel), about the topic below. Each 250–600 characters: hook first line, 2–4 short lines of value, one clear soft call to action (e.g. "Try it free in your browser: publora.com"). Variant 1 news-style, variant 2 friendly story, variant 3 ultra short. 0–2 emoji. Return JSON only: {"options":["...","...","..."]}`,
+  cover: `Design 3 different Instagram Reels covers for THIS reel, in the house cover series shown in the images (labelled). Study them closely: near-black background #070708 with faint grid, small pill tag in mono caps with a green dot, a big white heavy headline (often a question or a punchy statement), green #2FD27A used sparingly as the only accent (one word, a slab, a dot or a giant number), small mono lines starting with "→", official Publora logo + publora.com at the bottom. Black/white/green only, no lime, no colored logos, no emoji on the cover.
+Hard rules: covers next to each other in the feed must differ in COMPOSITION, not just text (look at the neighbour covers and the already posted ones and choose a different layout and accent). Headline max ~6 words, readable as a thumbnail. Use only facts from the brand notes. If a frame from the video is attached, say whether it is worth using as the background.
+Layouts the room can draw: "top" (tag + headline at the top, mono lines below, frame/grid shows in the lower part), "low" (visual/frame on top, text block low), "big" (giant short word or number in the centre, 1–4 characters like "$0" or "10", small mono question above it, headline under it).
+For each option return: layout, tag (1–2 words, caps), h (headline, use \n for line breaks), accent (one word or short phrase from h to colour green, or ""), slab (2–3 words on a green tilted slab, or ""; use slab rarely), big (only for layout "big", else ""), lines (0–3 short mono lines without the arrow), frame (true if the video frame should be the background), why (one sentence in Russian: idea and how it differs from the neighbours).
+Return JSON only: {"options":[{"layout":"top","tag":"","h":"","accent":"","slab":"","big":"","lines":[],"frame":false,"why":""}]}`,
   cta: `Write 5 call-to-action lines in English for the end of this caption (no comment-to-DM bait). Return JSON only: {"options":["..."]}`,
 };
 
@@ -62,6 +67,22 @@ Deno.serve(async (req) => {
       .filter((m: any) => (m.role === "user" || m.role === "assistant") && m.content)
       .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
     if (!messages.length || messages[messages.length - 1].role !== "user") return json({ error: "Пустой вопрос" }, 400);
+  } else if (mode === "cover") {
+    const content: any[] = [];
+    const img = (label: string, b64: string) => { content.push({ type: "text", text: label }); content.push({ type: "image", source: { type: "base64", media_type: b64.startsWith("iVBOR") ? "image/png" : b64.startsWith("UklG") ? "image/webp" : "image/jpeg", data: b64 } }); };
+    const b64 = async (p: string) => { const { data } = await user.storage.from("cabinet").download(p); if (!data) return null; const u = new Uint8Array(await data.arrayBuffer()); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
+    for (const [n, t] of [["about_stop", "About us (posted)"], ["works_low", "Works with (posted)"], ["price_zero", "Pricing"], ["howto_route", "How to use"], ["ig_formats", "IG formats"]]) {
+      const d = await b64(`${cid}/brand/covers/${n}.jpg`); if (d) img(`House series reference: ${t}`, d);
+    }
+    const { data: all } = await user.from("reels").select("id,code,title,day,status,poster_path").eq("client_id", cid).not("poster_path", "is", null);
+    const xs = (all || []).filter((x: any) => x.id !== body.reel_id);
+    const pubd = xs.filter((x: any) => x.status === "pub").sort((a: any, b: any) => String(b.day).localeCompare(String(a.day))).slice(0, 3);
+    const rd = (all || []).find((x: any) => x.id === body.reel_id)?.day;
+    const near = rd ? xs.filter((x: any) => x.day && x.status !== "pub").sort((a: any, b: any) => Math.abs(+new Date(a.day) - +new Date(rd)) - Math.abs(+new Date(b.day) - +new Date(rd))).slice(0, 3) : [];
+    for (const x of [...pubd, ...near]) { const d = await b64(x.poster_path); if (d) img(`${x.status === "pub" ? "Already posted" : "Neighbour in the plan"} (${x.day}): reel ${x.code} "${x.title}" current cover`, d); }
+    if (typeof body.frame === "string" && body.frame.length < 1_500_000) img("Frame from THIS reel's video (possible background):", body.frame.replace(/^data:image\/jpeg;base64,/, ""));
+    content.push({ type: "text", text: TASK.cover + (note ? `\nExtra wishes from the studio: ${note}` : "") });
+    messages = [{ role: "user", content }];
   } else {
     if (!TASK[mode]) return json({ error: "Неизвестный режим" }, 400);
     messages = [{ role: "user", content: TASK[mode] + (note ? `\nExtra wishes from the studio: ${note}` : "") }];
@@ -70,7 +91,7 @@ Deno.serve(async (req) => {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: MODEL, max_tokens: mode === "guide" ? 3500 : 1500, system, messages }),
+    body: JSON.stringify({ model: MODEL, max_tokens: mode === "guide" ? 3500 : mode === "cover" ? 2500 : 1500, system, messages }),
   });
   const b = await res.json();
   if (!res.ok) return json({ error: "ИИ: " + (b?.error?.message || res.status) }, 502);
