@@ -676,7 +676,7 @@ function renderStrat(){
   const lockedRows=REELS.filter(locked).sort((a,b)=>(a.day||'').localeCompare(b.day||''));
   $('stQ').innerHTML=(lockedRows.length?`<div class="qwk">Уже вышли или стоят в Publora</div>`+lockedRows.map(row).join(''):'')+
     P.q.map(r=>{const w=P.wk(P.out.get(r.id)||'');let h='';if(w&&w!==lastW){lastW=w;const W_=P.weeks.find(x=>x.id===w);h=`<div class="qwk">${esc(W_.lab)} · ${esc(W_.dates)}${W_.name?' · '+esc(W_.name):''}</div>`}return h+row(r)}).join('');
-  $('stQ').querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>openSheet(x.dataset.open));
+  $('stQ').querySelectorAll('.qr[data-q]').forEach(x=>{x.style.cursor='pointer';x.onclick=()=>openSheet(x.dataset.q)});
   if(!st)return;
   let dragId=null;
   $('stQ').querySelectorAll('.qr[draggable]').forEach(el=>{
