@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /*PROTO_CSS*/
+.ig-hc{background:#fff}.ig-hc img{object-fit:cover;background:#fff}
 /* ── живая версия ── */
 .login{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px}
 .login .card{width:min(420px,100%);padding:34px 30px 28px;text-align:center}
@@ -192,7 +193,7 @@ body.studio .gd .ge{display:grid}
       <div class="phone glass">
         <div class="ig-top"><div class="ig-ava" id="igAva"></div>
           <div class="ig-st"><div><b id="igPosts">0</b><span>posts</span></div><div><b>—</b><span>followers</span></div><div><b>—</b><span>following</span></div></div></div>
-        <div class="ig-bio"><b id="igName"></b><span>Posting by hand is over.<br>One post → 10 networks, from your browser or your AI.</span></div>
+        <div class="ig-bio"><b id="igName"></b><span>Posting by hand is over<br>Your AI posts for you. Everywhere.<br>ChatGPT, Claude &amp; more · start free ↓<br><a href="https://publora.com" target="_blank" style="color:#3B5BA5">publora.com</a></span></div>
         <div class="ig-hl" id="igHl"></div>
         <div class="ig-tabs"><i class="on"></i><i></i><i></i></div>
         <div class="ig-grid" id="igGrid"></div>
@@ -430,14 +431,14 @@ function renderWall(){
 
 // ── профиль Instagram из обложек ──
 let PMODE='now';
-const HLS=[{t:'About us',code:'51',p:'brand/hl_51.jpg'},{t:'Works with',code:'48',p:'brand/hl_48.jpg'},{t:'Pricing',code:'52',p:'brand/hl_52.jpg'},{t:'How to use',code:'49',p:'brand/hl_49.jpg'}];
+const HLS=[{t:'About us',code:'51',p:'brand/hl/About_us.png'},{t:'In Claude',code:'',p:'brand/hl/In_Claude.png'},{t:'In chatGPT',code:'',p:'brand/hl/In_ChatGPT.png'},{t:'Pricing',code:'52',p:'brand/hl/Pricing.png'},{t:'How to use',code:'49',p:'brand/hl/How_to_use.png'},{t:'Works with',code:'48',p:'brand/hl/Works_with.png'},{t:'For agencies',code:'',p:'brand/hl/For_agencies.png'},{t:'FAQ',code:'',p:'brand/hl/FAQ.png'},{t:'For devs',code:'',p:'brand/hl/For_devs.png'}];
 function renderProfile(){
   const keep=PMODE==='now'?['pub']:['pub','sched','ok'];
   const list=REELS.filter(r=>keep.includes(r.status)).sort((a,b)=>(b.day||'').localeCompare(a.day||'')||(b.sort-a.sort));
-  $('igPosts').textContent=list.length;$('igName').textContent=CL.name;
+  $('igPosts').textContent=list.length;$('igName').textContent='Publora | Post to 10 networks';
   const lg=url(CL.logo_path);$('igAva').innerHTML=lg?`<img src="${lg}" alt="">`:'';
   $('igHl').innerHTML=HLS.map(h=>{const r=h.code&&REELS.find(x=>x.code===h.code);const p=url(CL.id+'/'+h.p)||(r&&url(r.poster_path));
-    return `<div class="ig-h" ${r?`data-id="${r.id}" style="cursor:pointer"`:''}><div class="ig-hc">${p?`<img src="${p}" alt="" style="object-position:50% 30%">`:`<b>${esc(h.t[0])}</b>`}</div><span>${esc(h.t)}</span></div>`}).join('');
+    return `<div class="ig-h" ${r?`data-id="${r.id}" style="cursor:pointer"`:''}><div class="ig-hc">${p?`<img src="${p}" alt="">`:`<b>${esc(h.t[0])}</b>`}</div><span>${esc(h.t)}</span></div>`}).join('');
   $('igHl').querySelectorAll('[data-id]').forEach(c=>c.onclick=()=>openSheet(c.dataset.id));
   $('igGrid').innerHTML=list.map(r=>{const p=url(r.poster_path);return `<div class="ig-c ${r.status!=='pub'?'plan':''}" data-id="${r.id}" title="${esc(r.code+' · '+r.title)}">${p?`<img src="${p}" alt="" loading="lazy">`:`<div class="noimg">${esc(r.code)}</div>`}${r.pin?'<i class="pin"></i>':''}</div>`}).join('')
     +(list.length?'':'<div class="empty" style="grid-column:1/-1">Пока ничего не опубликовано</div>');
