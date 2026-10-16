@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dopa Room</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/*PROTO_CSS*/
+/* ── живая версия ── */
+.login{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px}
+.login .card{width:min(420px,100%);padding:34px 30px 28px;text-align:center}
+.login .drop{width:46px;height:46px;margin:0 auto 14px}
+.login h1{font-size:46px}
+.login p{margin:10px 0 22px;color:var(--muted);font-size:14px}
+.field{width:100%;border:0;border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.72);box-shadow:inset 0 1px 3px rgba(100,50,80,.12);outline:none;font-size:16px;font-weight:600;color:var(--ink)}
+.field:focus{box-shadow:inset 0 1px 3px rgba(100,50,80,.12),0 0 0 3px rgba(184,111,130,.25)}
+.login .field{text-align:center;letter-spacing:.18em;text-transform:uppercase}
+.login .btn{width:100%;margin-top:12px;padding:14px}
+.boot{position:fixed;inset:0;display:grid;place-items:center;z-index:89}
+.boot .drop{width:40px;height:40px;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(.82);opacity:.6}}
+[hidden]{display:none!important}
+.out{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--muted);flex:none}
+.out svg{width:17px;height:17px}
+.cmt .x2{margin-left:auto;flex:none;font-size:11px;font-weight:700;color:var(--muted);padding:2px 6px;border-radius:999px}
+.cmt.res{opacity:.5}
+.cmt.res div{text-decoration:line-through}
+.edit{display:grid;gap:8px;margin-top:8px}
+.edit textarea.field{min-height:160px;resize:vertical;font-size:14px;font-weight:500;line-height:1.5}
+.edit .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.edit .row .field{flex:1;min-width:140px;padding:10px 14px;font-size:14px}
+.upl{position:relative;overflow:hidden}
+.upl input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.prog{height:4px;border-radius:4px;background:rgba(255,255,255,.5);overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#C98596,#9C86D9);transition:width .3s}
+.people{display:grid;gap:8px}
+.person{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.5);box-shadow:inset 0 1px 0 #fff;flex-wrap:wrap}
+.person b{color:var(--ink)}
+.person .sub{flex:1;min-width:160px}
+.person.off{opacity:.5}
+.codebox{margin-top:12px;padding:16px;border-radius:18px;background:rgba(255,255,255,.75);box-shadow:inset 0 0 0 2px var(--lilac)}
+.codebox code{display:block;font:700 22px/1.2 var(--sans);letter-spacing:.2em;color:var(--ink);margin:6px 0 10px;word-break:break-all}
+.form{padding:20px;border-radius:var(--r-lg);display:grid;gap:10px;margin-top:16px}
+.form .row{display:flex;gap:8px;flex-wrap:wrap}
+.form .field{padding:11px 14px;font-size:14px;flex:1;min-width:160px}
+.task .who{font-size:12px;color:var(--muted);font-weight:600}
+.task .del,.item .del{align-self:flex-start}
+.out.off{color:var(--rose-deep)}
+</style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<filter id="lgS" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".012 .03" numOctaves="1" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/></filter>
+<filter id="lgL" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".006 .012" numOctaves="1" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="16" xChannelSelector="R" yChannelSelector="G"/></filter>
+</defs></svg>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
+<div class="boot" id="boot"><div class="drop"></div></div>
+
+<div class="login" id="login" hidden>
+  <form class="card glass" id="loginForm" autocomplete="off">
+    <div class="drop"></div>
+    <div class="eyebrow">dopa studio lab</div>
+    <h1 style="margin-top:8px">Dopa <em>Room</em></h1>
+    <p>Ваша комната в студии: ролики, решения и комментарии.<br>Введите личный код из сообщения студии.<br>Один раз на устройстве, дальше кабинет откроется сам.</p>
+    <input class="field" id="code" placeholder="Ваш код" maxlength="32" inputmode="text" autocapitalize="characters" spellcheck="false">
+    <div class="err" id="loginErr"></div>
+    <button class="btn pri" id="loginGo" type="submit">Войти</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+<header class="top">
+  <div class="bar glass">
+    <div class="mark"><div class="drop"></div><div class="mt">Dopa Room<small>by dopa studio lab</small></div></div>
+    <div class="client" id="clientBadge"></div>
+    <div class="sp"></div>
+    <div class="seg" id="role" hidden>
+      <div class="knob"></div>
+      <button data-r="client">Клиент</button>
+      <button data-r="studio" class="on">Студия</button>
+    </div>
+    <button class="out" id="snd" title="Звук" aria-label="Звук"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4h3l5 4V6L7 10H4z"/><path class="w" d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/><path class="m" d="M16 10l5 4M21 10l-5 4" style="display:none"/></svg></button>
+    <button class="out" id="logout" title="Выйти" aria-label="Выйти"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l4-4-4-4M14 12H4"/></svg></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="s-home" class="hero">
+    <div class="hi glass">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 style="margin-top:14px" id="hello"></h1>
+      <p class="lead">Здесь весь план роликов: что уже вышло, что стоит в очереди и где нужен ваш ответ. Ролики смотрите прямо тут и оставляйте комментарий к нужной секунде.</p>
+      <div class="week" id="weekNow"><b>1</b><span></span></div>
+    </div>
+    <div class="ringbox glass">
+      <div class="ring">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C98596"/><stop offset="1" stop-color="#9C86D9"/></linearGradient></defs>
+          <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="14"/>
+          <circle id="ringArc" cx="75" cy="75" r="62" fill="none" stroke="url(#rg)" stroke-width="14" stroke-linecap="round" stroke-dasharray="389.6" stroke-dashoffset="389.6" style="animation:ringin 1.4s cubic-bezier(.2,.8,.2,1);transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1)"/>
+        </svg>
+        <div class="num"><div><b id="ringNum">0</b><span id="ringSub">из 0 вышло</span></div></div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </section>
+
+  <section id="s-tasks">
+    <div class="sh"><div><div class="eyebrow">Нужен ваш ответ</div><h2>Решения <em>за вами</em></h2></div></div>
+    <div class="tasks" id="tasks"></div>
+    <form class="form glass studio-only" id="taskForm">
+      <div class="eyebrow">Новый вопрос клиенту</div>
+      <input class="field" name="q" placeholder="Вопрос" required>
+      <div class="row">
+        <input class="field" name="meta" placeholder="Пояснение, срок">
+        <select class="field" name="kind" style="flex:0 1 220px"><option value="chips">Варианты ответа</option><option value="approve">Одобрить ролик</option></select>
+      </div>
+      <input class="field" name="opts" placeholder="Варианты через ; или номер ролика для одобрения">
+      <div><button class="btn pri sm" type="submit">Добавить вопрос</button></div>
+    </form>
+  </section>
+
+  <section id="s-reels">
+    <div class="sh">
+      <div><div class="eyebrow">Все ролики плана</div><h2>Стена <em>роликов</em></h2></div>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="wall" id="wall"></div>
+    <div class="studio-only" style="margin-top:16px"><button class="btn sm" id="newReel">+ Новый ролик</button></div>
+  </section>
+
+  <section id="s-cal">
+    <div class="sh">
+      <div><div class="eyebrow">Когда что выходит · перетащите ролик на другой день</div><h2>Календарь <em>выхода</em></h2></div>
+      <div class="cal-head" id="weeks"></div>
+    </div>
+    <div class="sub" id="weekName"></div>
+    <div class="cal" id="cal"></div>
+  </section>
+
+  <section id="s-tg">
+    <div class="sh"><div><div class="eyebrow">Итоги переписки</div><h2>Разбор <em>чата</em></h2></div></div>
+    <div class="tgsrc glass">
+      <div class="tgi"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M21.5 4.3 2.9 11.5c-1.3.5-1.2 1.3-.2 1.6l4.8 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.8-1.4-1.2z"/></svg></div>
+      <span id="tgTitle"></span>
+      <span class="sp"></span>
+      <span class="studio-only sub">Пунктир = клиент пока не видит</span>
+    </div>
+    <div class="tg" id="tg"></div>
+    <form class="form glass studio-only" id="dgForm">
+      <div class="eyebrow">Добавить пункт</div>
+      <div class="row">
+        <select class="field" name="kind" style="flex:0 1 200px"><option value="dec">Решение</option><option value="todo">Задача</option><option value="q">Вопрос</option></select>
+        <input class="field" name="body" placeholder="Текст" required>
+      </div>
+      <div class="row"><input class="field" name="sub" placeholder="Подпись: кто, когда, срок"></div>
+      <div><button class="btn pri sm" type="submit">Добавить (клиент пока не видит)</button></div>
+    </form>
+  </section>
+
+  <section id="s-people" class="studio-only">
+    <div class="sh"><div><div class="eyebrow">Видит только студия</div><h2>Доступ <em>к кабинету</em></h2></div></div>
+    <div class="people" id="people"></div>
+    <form class="form glass" id="invForm">
+      <div class="eyebrow">Новый доступ</div>
+      <div class="row">
+        <input class="field" name="name" placeholder="Имя, как подписывать комментарии" required>
+        <select class="field" name="role" style="flex:0 1 200px"><option value="client">Клиент</option><option value="studio">Студия</option></select>
+      </div>
+      <div><button class="btn pri sm" type="submit">Выдать код</button></div>
+      <div id="newCode"></div>
+    </form>
+  </section>
+
+  <p class="foot" id="foot"></p>
+</main>
+
+<nav class="dock glass" id="dock">
+  <div class="blob"></div>
+  <button data-s="s-home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Обзор</span></button>
+  <button data-s="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Решения</span></button>
+  <button data-s="s-reels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/></svg><span>Ролики</span></button>
+  <button data-s="s-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Календарь</span></button>
+  <button data-s="s-tg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Чат</span></button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet glass" id="sheet" role="dialog" aria-modal="true">
+  <button class="x glass" id="close" aria-label="Закрыть">×</button>
+  <div><video id="vid" controls playsinline preload="metadata"></video><div id="sheetMedia"></div></div>
+  <div id="sheetBody"></div>
+</div>
+</div>
+<div class="toast glass" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const sb=supabase.createClient(DOPA.url,DOPA.key,{auth:{persistSession:true,autoRefreshToken:true}});
+const BUCKET='cabinet';
+const ST={
+  work:{t:'В работе',c:'#B7A3AE'},
+  rev:{t:'На проверке',c:'#D9906F'},
+  ok:{t:'Одобрен',c:'#6E9580'},
+  sched:{t:'В Publora',c:'#8E9BDB'},
+  pub:{t:'Опубликован',c:'#B86F82'}
+};
+const ORDER=['work','rev','ok','sched','pub'];
+const DG_COLS=[{k:'dec',t:'Решения',c:'#6E9580'},{k:'todo',t:'Задачи',c:'#8E9BDB'},{k:'q',t:'Вопросы без ответа',c:'#D9906F'}];
+const DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const MONS=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=t=>{t=Math.max(0,Math.round(t||0));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0')};
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const fromIso=s=>{if(!s)return null;const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const label=d=>DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MONS[d.getMonth()];
+const dayLabel=s=>{const d=fromIso(s);return d?label(d):'без даты'};
+const now0=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())};
+
+let CL=null,ME=null,ALL_ME=[],REELS=[],CMS=[],TASKS=[],DG=[],PEOPLE=[],SIGNED={};
+let VIEW='studio',F='all',W=null,CUR=null;
+const studio=()=>ME&&ME.role==='studio'&&VIEW==='studio';
+const isStudioUser=()=>ME&&ME.role==='studio';
+
+// ── звук и отклик ──
+let audio;
+function tick(f=880){if(MUTE)return;try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);o.frequency.exponentialRampToValueAtTime(f*1.6,audio.currentTime+.06);g.gain.setValueAtTime(.12,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.16);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+.17)}catch(e){}}
+// ── звук выключаемый (кнопка в шапке, запоминается) ──
+let MUTE=false;try{MUTE=localStorage.getItem('dopa_mute')==='1'}catch(e){}
+function paintSnd(){const b=$('snd');if(!b)return;b.classList.toggle('off',MUTE);b.querySelector('.w').style.display=MUTE?'none':'';b.querySelector('.m').style.display=MUTE?'':'none';b.title=MUTE?'Включить звук':'Выключить звук'}
+document.addEventListener('click',e=>{const b=e.target.closest('#snd');if(!b)return;MUTE=!MUTE;try{localStorage.setItem('dopa_mute',MUTE?'1':'0')}catch(e){}paintSnd();if(!MUTE)tick(900)});paintSnd();
+// блик бежит за курсором по стеклянным кнопкам
+document.addEventListener('pointermove',e=>{const g=e.target.closest('.btn,.chip,.out,.seg,.client,.week,.st,.sheet .x');if(!g)return;const b=g.getBoundingClientRect();g.style.setProperty('--lx',((e.clientX-b.left)/b.width*100)+'%');g.style.setProperty('--ly',((e.clientY-b.top)/b.height*100)+'%')});
+// преломление краёв: включаем там, где браузер умеет SVG-фильтр в backdrop-filter (Chrome, Safari)
+if(CSS.supports('backdrop-filter','url(#x) blur(1px)')||CSS.supports('-webkit-backdrop-filter','url(#x) blur(1px)'))document.documentElement.classList.add('lg-refract');
+function ripple(e){if(!e||e.clientX==null)return;const r=document.createElement('div');r.className='ripple';r.style.left=e.clientX+'px';r.style.top=e.clientY+'px';document.body.appendChild(r);setTimeout(()=>r.remove(),750)}
+document.addEventListener('pointerdown',e=>{if(e.target.closest('button,.tile,.opt,.st,.mini')){ripple(e);tick(e.target.closest('.btn.pri')?660:900)}});
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2400)}
+document.addEventListener('pointermove',e=>{const g=e.target.closest('.glass');if(!g)return;const b=g.getBoundingClientRect();g.style.setProperty('--mx',((e.clientX-b.left)/b.width*100)+'%');g.style.setProperty('--my',((e.clientY-b.top)/b.height*100)+'%')});
+const fail=(e,m='Не получилось сохранить')=>{console.error(e);toast(m+'. Попробуйте ещё раз')};
+
+// ── вход ──
+async function loginWithCode(code){
+  const r=await fetch(DOPA.url+'/functions/v1/login',{method:'POST',headers:{'Content-Type':'application/json',apikey:DOPA.key,Authorization:'Bearer '+DOPA.key},body:JSON.stringify({code})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.token_hash)throw new Error(j.error||'Код не подошёл');
+  const {error}=await sb.auth.verifyOtp({token_hash:j.token_hash,type:'email'});
+  if(error)throw error;
+}
+$('loginForm').onsubmit=async e=>{
+  e.preventDefault();const code=$('code').value.trim();const err=$('loginErr');
+  if(!code){err.textContent='Введите код';$('code').focus();return}
+  $('loginGo').disabled=true;$('loginGo').textContent='Проверяю…';err.textContent='';
+  try{await loginWithCode(code);await start()}
+  catch(x){err.textContent=x.message==='Код не подошёл'?'Код не подошёл. Проверьте, нет ли лишних символов':'Не получилось войти, попробуйте ещё раз'}
+  finally{$('loginGo').disabled=false;$('loginGo').textContent='Войти'}
+};
+$('code').oninput=()=>$('loginErr').textContent='';
+$('logout').onclick=async()=>{await sb.auth.signOut();location.hash='';location.reload()};
+function showLogin(){$('boot').hidden=true;$('app').hidden=true;$('login').hidden=false;setTimeout(()=>$('code').focus(),50)}
+
+// ── данные ──
+async function sign(paths){
+  const need=[...new Set(paths.filter(p=>p&&!SIGNED[p]))];
+  for(let i=0;i<need.length;i+=100){
+    const {data}=await sb.storage.from(BUCKET).createSignedUrls(need.slice(i,i+100),21600);
+    (data||[]).forEach(x=>{if(x.signedUrl)SIGNED[x.path]=x.signedUrl});
+  }
+}
+const url=p=>p?SIGNED[p]||'':'';
+async function loadReels(){const {data,error}=await sb.from('reels').select('*').eq('client_id',CL.id).order('day',{nullsFirst:false}).order('sort');if(error)throw error;REELS=data}
+async function loadComments(){const {data,error}=await sb.from('comments').select('*').eq('client_id',CL.id).order('t');if(error)throw error;CMS=data}
+async function loadTasks(){const {data,error}=await sb.from('tasks').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error)throw error;TASKS=data}
+async function loadDigest(){const {data,error}=await sb.from('digest').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error)throw error;DG=data}
+async function loadPeople(){if(!isStudioUser()){PEOPLE=[];return}const {data}=await sb.from('members').select('id,name,role,active,last_login,user_id').eq('client_id',CL.id).order('created_at');PEOPLE=data||[]}
+
+async function start(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){showLogin();return}
+  const {data:mem,error}=await sb.from('members').select('*').eq('user_id',session.user.id).eq('active',true);
+  if(error||!mem||!mem.length){await sb.auth.signOut();showLogin();$('loginErr').textContent='Доступ закрыт. Напишите студии';return}
+  ALL_ME=mem;
+  const ids=mem.map(m=>m.client_id);
+  const {data:cls}=await sb.from('clients').select('*').in('id',ids);
+  const host=location.hostname.split('.')[0];
+  const want=new URLSearchParams(location.search).get('c')||host;
+  CL=cls.find(c=>c.slug===want)||cls[0];
+  ME=mem.find(m=>m.client_id===CL.id);
+  VIEW=ME.role==='studio'?'studio':'client';
+  await Promise.all([loadReels(),loadComments(),loadTasks(),loadDigest(),loadPeople()]);
+  await sign([CL.logo_path,...REELS.map(r=>r.poster_path),...TASKS.flatMap(t=>t.kind==='pick'?t.opts.map(o=>o[1]):[])]);
+  document.title=CL.name+' · Dopa Room';
+  $('login').hidden=true;$('boot').hidden=true;$('app').hidden=false;
+  W=currentWeek()?.id||CL.weeks[0]?.id;
+  renderHead();renderAll();applyRole();setTimeout(onScroll,50);
+  subscribe();
+}
+
+// ── живые обновления ──
+let chan,deb={};
+function later(k,fn){clearTimeout(deb[k]);deb[k]=setTimeout(fn,250)}
+function subscribe(){
+  if(chan)sb.removeChannel(chan);
+  const f='client_id=eq.'+CL.id;
+  chan=sb.channel('c-'+CL.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'reels',filter:f},()=>later('r',async()=>{await loadReels();await sign(REELS.map(r=>r.poster_path));renderAll(false);if(sheetOpen())renderSheet(true)}))
+    .on('postgres_changes',{event:'*',schema:'public',table:'comments',filter:f},()=>later('c',async()=>{await loadComments();renderWall();if(sheetOpen())renderComments()}))
+    .on('postgres_changes',{event:'*',schema:'public',table:'tasks',filter:f},()=>later('t',async()=>{await loadTasks();renderTasks()}))
+    .on('postgres_changes',{event:'*',schema:'public',table:'digest',filter:f},()=>later('d',async()=>{await loadDigest();renderTG()}))
+    .subscribe();
+}
+
+// ── шапка и обзор ──
+function renderHead(){
+  $('clientBadge').innerHTML=CL.logo_path?`<img src="${url(CL.logo_path)}" alt="${esc(CL.name)}" style="width:auto;height:18px">`:esc(CL.name);
+  $('eyebrow').textContent=[CL.handle&&('Instagram '+CL.handle),CL.season].filter(Boolean).join(' · ');
+  const h=new Date().getHours();const hi=h<5?'Доброй ночи':h<12?'Доброе утро':h<18?'Добрый день':'Добрый вечер';
+  $('hello').innerHTML=`${hi},<br><em>${ME.role==='studio'?esc(ME.name):'команда '+esc(CL.name)}</em>`;
+  $('tgTitle').innerHTML=`<b style="color:var(--ink)">${esc(CL.name)} × Dopa</b> · решения, задачи и вопросы из переписки`;
+  $('foot').textContent='Dopa Room · '+CL.name+' · by dopa studio lab';
+  $('role').hidden=!isStudioUser();
+}
+function weekOf(day){const d=fromIso(day);if(!d)return null;return CL.weeks.find(w=>{const s=fromIso(w.start);return s&&d>=s&&d<new Date(s.getFullYear(),s.getMonth(),s.getDate()+7)})||null}
+function currentWeek(){const t=now0();return weekOf(iso(t))||CL.weeks.find(w=>fromIso(w.start)>t)||CL.weeks[CL.weeks.length-1]}
+function renderStats(){
+  const c={};ORDER.forEach(k=>c[k]=0);REELS.forEach(r=>c[r.status]++);
+  const total=REELS.length||1;
+  $('stats').innerHTML=ORDER.slice().reverse().map(k=>`<div class="st" data-f="${k}"><i style="background:${ST[k].c}"></i>${ST[k].t}<b>${c[k]}</b></div>`).join('');
+  document.querySelectorAll('.st').forEach(el=>el.onclick=()=>{F=el.dataset.f;renderWall();renderFilters();go('s-reels')});
+  $('ringNum').textContent=c.pub;$('ringSub').textContent='из '+REELS.length+' вышло';
+  $('ringArc').setAttribute('stroke-dashoffset',389.6*(1-c.pub/total));
+  const w=currentWeek();const idx=CL.weeks.indexOf(w);
+  $('weekNow').hidden=!w;
+  if(w){$('weekNow').querySelector('b').textContent=idx+1;$('weekNow').querySelector('span').textContent=`${w.lab} · ${w.dates} · ${w.name}`}
+}
+
+// ── стена ──
+const openCm=r=>CMS.filter(c=>c.reel_id===r.id&&!c.resolved).length;
+function renderFilters(){
+  const opts=[['all','Все'],...ORDER.map(k=>[k,ST[k].t])];
+  $('filters').innerHTML=opts.map(([k,t])=>`<button class="chip ${F===k?'on':''}" data-k="${k}">${t}</button>`).join('');
+  document.querySelectorAll('#filters .chip').forEach(b=>b.onclick=()=>{F=b.dataset.k;renderFilters();renderWall()});
+}
+function renderWall(){
+  const list=REELS.filter(r=>F==='all'||r.status===F);
+  $('wall').innerHTML=list.map(r=>{const s=ST[r.status];const p=url(r.poster_path);const n=openCm(r);
+    return `<div class="tile" data-id="${r.id}">${p?`<img src="${p}" alt="" loading="lazy">`:`<div class="noimg">${esc(r.code)}</div>`}
+      <div class="pill"><i style="background:${s.c}"></i>${s.t}</div>${p?`<div class="num">${esc(r.code)}</div>`:''}
+      ${n?`<div class="cm">${n} комм.</div>`:''}<div class="shade"></div>
+      <div class="info"><b>${esc(r.title)}</b><small>${esc(dayLabel(r.day))}${r.dur?' · '+Math.round(r.dur)+' с':''}</small></div></div>`}).join('')||'<div class="empty">Здесь пока пусто</div>';
+  document.querySelectorAll('.tile').forEach(t=>{t.onclick=()=>openSheet(t.dataset.id);t.onpointermove=e=>{const b=t.getBoundingClientRect();t.style.setProperty('--ry',((e.clientX-b.left)/b.width-.5)*8+'deg')}});
+}
+
+// ── календарь ──
+function renderCal(){
+  $('weeks').innerHTML=CL.weeks.map(w=>`<button class="chip ${W===w.id?'on':''}" data-w="${w.id}">${esc(w.lab.replace('Неделя ','Нед '))}</button>`).join('');
+  document.querySelectorAll('#weeks .chip').forEach(b=>b.onclick=()=>{W=b.dataset.w;renderCal()});
+  const w=CL.weeks.find(x=>x.id===W);if(!w){$('cal').innerHTML='';return}
+  $('weekName').textContent=`${w.dates} · ${w.name}`;
+  const s=fromIso(w.start),today=now0().getTime();
+  const days=DOW.map((_,i)=>new Date(s.getFullYear(),s.getMonth(),s.getDate()+i));
+  $('cal').innerHTML=days.map(d=>{const D=iso(d);const items=REELS.filter(r=>r.day===D);
+    return `<div class="day glass ${d.getTime()===today?'today':''}" data-day="${D}"><h4>${DOW[(d.getDay()+6)%7]}<b>${d.getDate()}</b></h4>
+    ${items.map(r=>{const p=url(r.poster_path);return `<div class="mini" draggable="true" data-id="${r.id}">${p?`<img src="${p}" alt="">`:'<div class="ph"></div>'}<span>${esc(r.code)} · ${esc(r.title)}</span><i class="dot" style="background:${ST[r.status].c}"></i></div>`}).join('')}</div>`}).join('');
+  document.querySelectorAll('.mini').forEach(m=>{
+    m.ondragstart=e=>{m.classList.add('drag');e.dataTransfer.setData('text/plain',m.dataset.id)};
+    m.ondragend=()=>m.classList.remove('drag');
+    m.onclick=()=>openSheet(m.dataset.id);
+  });
+  document.querySelectorAll('.day').forEach(d=>{
+    d.ondragover=e=>{e.preventDefault();d.classList.add('over')};
+    d.ondragleave=()=>d.classList.remove('over');
+    d.ondrop=async e=>{e.preventDefault();d.classList.remove('over');const id=e.dataTransfer.getData('text/plain');const r=REELS.find(x=>x.id===id);if(!r||r.day===d.dataset.day)return;
+      const old=r.day;r.day=d.dataset.day;tick(520);renderCal();renderWall();
+      const {error}=await sb.rpc('move_reel',{r:id,d:d.dataset.day});
+      if(error){r.day=old;renderCal();renderWall();fail(error,'Не получилось перенести')}else toast(`Ролик ${r.code} перенесён на ${dayLabel(r.day)}`)};
+  });
+}
+
+// ── решения ──
+function renderTasks(){
+  const st=studio();
+  const list=TASKS;
+  $('tasks').innerHTML=list.map(t=>{const v=t.answer;let body='';
+    if(t.kind==='pick')body=`<div class="opts">${t.opts.map(([k,p])=>`<button class="opt ${v===k?'on':''}" data-t="${t.id}" data-v="${esc(k)}"><img src="${url(p)}" alt=""><span>Вариант ${esc(k)}</span></button>`).join('')}</div>`;
+    if(t.kind==='chips')body=`<div class="chips">${t.opts.map(o=>`<button class="chip ${v===o?'on':''}" data-t="${t.id}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+    if(t.kind==='approve'){const r=REELS.find(x=>x.code===t.reel_code);body=`<div style="display:flex;gap:8px;flex-wrap:wrap">${r?`<button class="btn sm" data-open="${r.id}">Открыть ролик</button>`:''}<button class="btn pri sm" data-t="${t.id}" data-v="ok">${v?'Одобрено':'Одобрить'}</button></div>`}
+    return `<div class="task glass ${v?'done':''}"><div class="q">${esc(t.q)}</div>${t.meta?`<div class="meta">${esc(t.meta)}</div>`:''}${body}
+      <div class="done-note">Ответ отправлен студии</div>${v&&t.answered_by?`<div class="who">${esc(t.answered_by)} · ${new Date(t.answered_at).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</div>`:''}
+      ${st?`<button class="btn sm del" data-deltask="${t.id}">Убрать вопрос</button>`:''}</div>`}).join('')||'<div class="empty">Сейчас вопросов нет</div>';
+  document.querySelectorAll('#tasks [data-t]').forEach(b=>b.onclick=async()=>{const t=TASKS.find(x=>x.id===b.dataset.t);const old=t.answer;t.answer=b.dataset.v;renderTasks();
+    const {error}=await sb.rpc('answer_task',{tk:t.id,a:b.dataset.v});if(error){t.answer=old;renderTasks();fail(error)}else{toast('Ответ сохранён');if(t.kind==='approve'){await loadReels();renderAll(false)}}});
+  document.querySelectorAll('#tasks [data-open]').forEach(b=>b.onclick=()=>openSheet(b.dataset.open));
+  document.querySelectorAll('[data-deltask]').forEach(b=>b.onclick=async()=>{if(!confirm('Убрать этот вопрос из кабинета?'))return;const {error}=await sb.from('tasks').delete().eq('id',b.dataset.deltask);if(error)fail(error);else{TASKS=TASKS.filter(t=>t.id!==b.dataset.deltask);renderTasks()}});
+}
+$('taskForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const kind=f.get('kind');const raw=String(f.get('opts')||'').trim();
+  const row={client_id:CL.id,q:f.get('q').trim(),meta:f.get('meta').trim()||null,kind,sort:TASKS.length};
+  if(kind==='chips'){row.opts=raw.split(';').map(s=>s.trim()).filter(Boolean);if(row.opts.length<2){toast('Нужно хотя бы два варианта через ;');return}}
+  else{if(!REELS.find(r=>r.code===raw)){toast('Нет ролика с номером '+raw);return}row.reel_code=raw}
+  const {data,error}=await sb.from('tasks').insert(row).select().single();if(error)return fail(error);TASKS.push(data);renderTasks();e.target.reset();toast('Вопрос добавлен')};
+
+// ── разбор чата ──
+function renderTG(){
+  const st=studio();
+  $('tg').innerHTML=DG_COLS.map(col=>`<div class="col glass"><h3><i style="background:${col.c}"></i>${col.t}</h3>
+    ${DG.filter(it=>it.kind===col.k&&(st||it.visible)).map(it=>`<div class="item ${st&&!it.visible?'hidden-c':''}">${esc(it.body)}${it.sub?`<small>${esc(it.sub)}</small>`:''}
+    ${st?`<div class="act"><button class="btn sm ${it.visible?'':'pri'}" data-vis="${it.id}">${it.visible?'Скрыть от клиента':'Показать клиенту'}</button><button class="btn sm" data-deldg="${it.id}">Удалить</button></div>`:''}</div>`).join('')||'<div class="empty">Пока ничего</div>'}</div>`).join('');
+  document.querySelectorAll('[data-vis]').forEach(b=>b.onclick=async()=>{const it=DG.find(x=>x.id===b.dataset.vis);it.visible=!it.visible;renderTG();
+    const {error}=await sb.from('digest').update({visible:it.visible}).eq('id',it.id);if(error){it.visible=!it.visible;renderTG();fail(error)}else toast(it.visible?'Клиент теперь видит этот пункт':'Пункт скрыт от клиента')});
+  document.querySelectorAll('[data-deldg]').forEach(b=>b.onclick=async()=>{if(!confirm('Удалить пункт?'))return;const {error}=await sb.from('digest').delete().eq('id',b.dataset.deldg);if(error)fail(error);else{DG=DG.filter(x=>x.id!==b.dataset.deldg);renderTG()}});
+}
+$('dgForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);
+  const {data,error}=await sb.from('digest').insert({client_id:CL.id,kind:f.get('kind'),body:f.get('body').trim(),sub:f.get('sub').trim()||null,sort:DG.length}).select().single();
+  if(error)return fail(error);DG.push(data);renderTG();e.target.reset();toast('Пункт добавлен, клиент его пока не видит')};
+
+// ── доступ ──
+function renderPeople(){
+  if(!isStudioUser()){$('people').innerHTML='';return}
+  $('people').innerHTML=PEOPLE.map(p=>`<div class="person ${p.active?'':'off'}"><b>${esc(p.name)}</b>
+    <span class="sub">${p.role==='studio'?'Студия':'Клиент'} · ${p.last_login?'заходил(а) '+new Date(p.last_login).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'ещё не входил(а)'}${p.active?'':' · отключён'}</span>
+    ${p.user_id===ME.user_id?'<span class="sub">это вы</span>':`<button class="btn sm" data-reset="${p.id}">Новый код</button><button class="btn sm" data-act="${p.id}" data-on="${p.active?0:1}">${p.active?'Отключить':'Включить'}</button>`}</div>`).join('');
+  document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{if(!confirm('Старый код перестанет работать. Выдать новый?'))return;const {data,error}=await sb.rpc('studio_reset_code',{m:b.dataset.reset});if(error)return fail(error);showCode(PEOPLE.find(p=>p.id===b.dataset.reset).name,data);await loadPeople();renderPeople()});
+  document.querySelectorAll('[data-act]').forEach(b=>b.onclick=async()=>{const {error}=await sb.rpc('studio_set_active',{m:b.dataset.act,on_:b.dataset.on==='1'});if(error)return fail(error);await loadPeople();renderPeople()});
+}
+function showCode(name,code){
+  const link=location.origin+location.pathname+'#k='+code;
+  $('newCode').innerHTML=`<div class="codebox"><div class="sub">Код для «${esc(name)}». Покажется только сейчас, скопируйте и отправьте лично.</div><code>${esc(code)}</code>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" data-copy="${esc(code)}">Скопировать код</button><button class="btn lil sm" type="button" data-copy="${esc(link)}">Скопировать ссылку для входа</button></div></div>`;
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{navigator.clipboard.writeText(b.dataset.copy);toast('Скопировано')});
+}
+$('invForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const name=f.get('name').trim();
+  const {data,error}=await sb.rpc('studio_invite',{c:CL.id,who:name,r:f.get('role')});if(error)return fail(error);
+  showCode(name,data);e.target.reset();await loadPeople();renderPeople()};
+
+// ── карточка ролика ──
+const vid=$('vid');
+const sheetOpen=()=>$('sheet').classList.contains('on');
+function hashtags(cap){return (cap||'').match(/#[\wа-яё]+/gi)||[]}
+function capBody(cap){return (cap||'').replace(/\n?[^\n]*#[\wа-яё]+[^\n]*$/i,'').trim()}
+async function openSheet(id){
+  const r=REELS.find(x=>x.id===id);if(!r)return;CUR=r;
+  vid.removeAttribute('src');vid.poster=url(r.poster_path);
+  vid.style.display=r.video_path?'block':'none';
+  renderSheet();
+  $('scrim').classList.add('on');$('sheet').classList.add('on');
+  if(r.video_path){const {data}=await sb.storage.from(BUCKET).createSignedUrl(r.video_path,21600);if(CUR===r&&data)vid.src=data.signedUrl}
+}
+function renderSheet(soft){
+  const r=REELS.find(x=>x.id===CUR.id)||CUR;CUR=r;const st=studio();const w=weekOf(r.day);
+  if(soft&&document.activeElement&&$('sheet').contains(document.activeElement)&&/TEXTAREA|INPUT/.test(document.activeElement.tagName))return;
+  $('sheetMedia').innerHTML=st?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <label class="btn sm upl">${r.video_path?'Заменить видео':'Загрузить видео'}<input type="file" accept="video/mp4,video/quicktime" id="upVid"></label>
+      <label class="btn sm upl">Обложка<input type="file" accept="image/jpeg,image/png,image/webp" id="upPos"></label></div><div class="prog" id="prog" hidden><i></i></div>`:'';
+  $('sheetBody').innerHTML=`
+    <div class="sub">Ролик ${esc(r.code)} · ${esc(dayLabel(r.day))}${w?' · '+esc(w.lab):''}${r.dur?' · '+Math.round(r.dur)+' с':''}</div>
+    <h2>${esc(r.title)}</h2>
+    ${r.idea?`<div class="sub" style="font-weight:500;color:var(--body);font-size:14px">${esc(r.idea)}</div>`:''}
+    <div class="lbl">Статус</div>
+    ${st?`<div class="stsel">${ORDER.map(k=>`<button class="${k===r.status?'on':''}" data-st="${k}"><i style="background:${ST[k].c}"></i>${ST[k].t}</button>`).join('')}</div>`
+      :`<div class="stsel"><button class="on"><i style="background:${ST[r.status].c}"></i>${ST[r.status].t}</button></div>`}
+    <div class="lbl">Подпись к посту <button class="btn sm" id="copyCap">Скопировать</button></div>
+    ${st?`<div class="edit"><div class="row"><input class="field" id="eTitle" value="${esc(r.title)}" placeholder="Название"><input class="field" id="eDay" type="date" value="${esc(r.day||'')}" style="flex:0 1 170px"></div>
+      <textarea class="field" id="eCap" placeholder="Подпись и хэштеги">${esc(r.caption||'')}</textarea>
+      <div><button class="btn lil sm" id="eSave">Сохранить</button></div></div>`
+      :`<div class="cap">${esc(capBody(r.caption))||'Подпись появится позже'}</div>
+    <div class="lbl">Хэштеги</div>
+    <div class="tags">${hashtags(r.caption).map(h=>`<span class="tag">${esc(h)}</span>`).join('')||'<span class="empty">Пока нет</span>'}</div>`}
+    <div class="lbl">Комментарии <span id="cmN" style="letter-spacing:0;text-transform:none;font-weight:600"></span></div>
+    <div class="comments" id="cmList"></div>
+    <div class="compose"><textarea id="cmIn" placeholder="Вот здесь я бы сделала надпись крупнее"></textarea><button class="btn lil" id="cmGo" title="Отправить комментарий к этой секунде">${fmt(vid.currentTime||0)}</button></div>
+    <div class="err" id="cmErr"></div>
+    <div class="approve-row">
+      <button class="btn pri" id="approve">${['ok','sched','pub'].includes(r.status)?'Одобрено':'Одобрить ролик'}</button>
+      <span class="sub">${st?'Вы смотрите как студия: статус и подпись можно менять':'После одобрения ролик уйдёт в очередь Publora'}</span>
+    </div>`;
+  renderComments();
+  const b=$('sheetBody');
+  b.querySelectorAll('[data-st]').forEach(x=>x.onclick=async()=>{const old=r.status;r.status=x.dataset.st;renderSheet();renderAll(false);
+    const {error}=await sb.from('reels').update({status:r.status}).eq('id',r.id);if(error){r.status=old;renderSheet();renderAll(false);fail(error)}});
+  $('copyCap').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(st?$('eCap').value:(r.caption||''));toast('Подпись скопирована')};
+  if(st){$('eSave').onclick=async()=>{const upd={title:$('eTitle').value.trim(),caption:$('eCap').value,day:$('eDay').value||null};
+    const {error}=await sb.from('reels').update(upd).eq('id',r.id);if(error)return fail(error);Object.assign(r,upd);renderAll(false);toast('Сохранено')};
+    $('upVid').onchange=e=>uploadVideo(r,e.target.files[0]);$('upPos').onchange=e=>uploadPoster(r,e.target.files[0])}
+  const inp=$('cmIn'),err=$('cmErr');
+  inp.oninput=()=>err.textContent='';
+  $('cmGo').onclick=async()=>{const x=inp.value.trim();if(!x){err.textContent='Сначала напишите комментарий';inp.focus();return}
+    const t=vid.currentTime||0;$('cmGo').disabled=true;
+    const {data,error}=await sb.from('comments').insert({client_id:CL.id,reel_id:r.id,t,body:x}).select().single();
+    $('cmGo').disabled=false;if(error)return fail(error,'Комментарий не отправился');
+    if(!CMS.find(c=>c.id===data.id))CMS.push(data);CMS.sort((a,b)=>a.t-b.t);inp.value='';renderComments();renderWall();toast('Комментарий к '+fmt(t)+' отправлен')};
+  $('approve').onclick=async()=>{if(!['work','rev'].includes(r.status))return;const {error}=await sb.rpc('approve_reel',{r:r.id});if(error)return fail(error);r.status='ok';renderSheet();renderAll(false);toast('Ролик '+r.code+' одобрен')};
+}
+function renderComments(){
+  const r=CUR;if(!r)return;const st=studio();const cm=CMS.filter(c=>c.reel_id===r.id);
+  $('cmN').textContent=cm.length||'';
+  $('cmList').innerHTML=cm.map(c=>`<div class="cmt ${c.resolved?'res':''}"><span class="ts" data-ts="${c.t}">${fmt(c.t)}</span><div><span class="who">${esc(c.author_name)}</span>${esc(c.body)}</div>
+    ${st?`<button class="x2" data-res="${c.id}">${c.resolved?'вернуть':'готово'}</button>`:''}${c.author_id===ME.user_id||st?`<button class="x2" data-delc="${c.id}">×</button>`:''}</div>`).join('')||'<div class="empty">Поставьте видео на паузу в нужном месте и напишите, что поменять</div>';
+  $('cmList').querySelectorAll('[data-ts]').forEach(x=>x.onclick=()=>{vid.currentTime=+x.dataset.ts;vid.play()});
+  $('cmList').querySelectorAll('[data-res]').forEach(x=>x.onclick=async()=>{const c=CMS.find(y=>y.id===x.dataset.res);c.resolved=!c.resolved;renderComments();renderWall();const {error}=await sb.from('comments').update({resolved:c.resolved}).eq('id',c.id);if(error){c.resolved=!c.resolved;renderComments();fail(error)}});
+  $('cmList').querySelectorAll('[data-delc]').forEach(x=>x.onclick=async()=>{if(!confirm('Удалить комментарий?'))return;const {error}=await sb.from('comments').delete().eq('id',x.dataset.delc);if(error)return fail(error);CMS=CMS.filter(c=>c.id!==x.dataset.delc);renderComments();renderWall()});
+}
+vid.addEventListener('timeupdate',()=>{const g=$('cmGo');if(g)g.textContent=fmt(vid.currentTime)});
+function closeSheet(){$('scrim').classList.remove('on');$('sheet').classList.remove('on');vid.pause()}
+$('scrim').onclick=closeSheet;$('close').onclick=closeSheet;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+// ── загрузка файлов (студия) ──
+function prog(p){const el=$('prog');if(!el)return;el.hidden=p==null;el.firstElementChild.style.width=(p||0)+'%'}
+async function frameOf(file){return new Promise(res=>{const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=URL.createObjectURL(file);
+  v.onloadedmetadata=()=>{v.currentTime=Math.min(1,v.duration/3)};
+  v.onseeked=()=>{const c=document.createElement('canvas');c.width=540;c.height=960;const g=c.getContext('2d');const s=Math.max(540/v.videoWidth,960/v.videoHeight);const w=v.videoWidth*s,h=v.videoHeight*s;g.drawImage(v,(540-w)/2,(960-h)/2,w,h);c.toBlob(b=>res({blob:b,dur:v.duration}),'image/jpeg',.82)};
+  v.onerror=()=>res({blob:null,dur:null})})}
+async function uploadVideo(r,file){
+  if(!file)return;prog(10);
+  const path=`${CL.id}/reels/${r.code}_${Date.now().toString(36)}.mp4`;
+  const {error}=await sb.storage.from(BUCKET).upload(path,file,{contentType:file.type||'video/mp4',upsert:true});
+  if(error){prog(null);return fail(error,'Видео не загрузилось')}
+  prog(70);const fr=await frameOf(file);const upd={video_path:path};if(fr.dur)upd.dur=Math.round(fr.dur*10)/10;
+  if(fr.blob&&!r.poster_path){const pp=`${CL.id}/posters/${r.code}_${Date.now().toString(36)}.jpg`;const {error:e2}=await sb.storage.from(BUCKET).upload(pp,fr.blob,{contentType:'image/jpeg'});if(!e2){upd.poster_path=pp;await sign([pp])}}
+  const {error:e3}=await sb.from('reels').update(upd).eq('id',r.id);prog(null);if(e3)return fail(e3);
+  Object.assign(r,upd);renderAll(false);openSheet(r.id);toast('Видео загружено')}
+async function uploadPoster(r,file){
+  if(!file)return;prog(30);const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const pp=`${CL.id}/posters/${r.code}_${Date.now().toString(36)}.${ext}`;
+  const {error}=await sb.storage.from(BUCKET).upload(pp,file,{contentType:file.type});if(error){prog(null);return fail(error,'Обложка не загрузилась')}
+  const {error:e2}=await sb.from('reels').update({poster_path:pp}).eq('id',r.id);prog(null);if(e2)return fail(e2);
+  r.poster_path=pp;await sign([pp]);vid.poster=url(pp);renderAll(false);toast('Обложка обновлена')}
+$('newReel').onclick=async()=>{
+  const nums=REELS.map(r=>parseInt(r.code)).filter(n=>!isNaN(n));const code=String((nums.length?Math.max(...nums):0)+1).padStart(2,'0');
+  const {data,error}=await sb.from('reels').insert({client_id:CL.id,code,title:'Новый ролик',status:'work',sort:REELS.length}).select().single();
+  if(error)return fail(error);REELS.push(data);renderAll(false);openSheet(data.id);toast('Ролик '+code+' создан')};
+
+// ── роль и навигация ──
+function placeKnob(sel,on){const el=document.querySelector(sel),b=el&&el.querySelector(on),k=el&&el.querySelector('.knob,.blob');if(!b||!k)return;k.style.left=b.offsetLeft+'px';k.style.width=b.offsetWidth+'px'}
+document.querySelectorAll('#role button').forEach(b=>b.onclick=()=>{VIEW=b.dataset.r;applyRole();renderTasks();renderTG();if(CUR&&sheetOpen())renderSheet()});
+function applyRole(){document.body.classList.toggle('studio',studio());document.querySelectorAll('#role button').forEach(b=>b.classList.toggle('on',b.dataset.r===VIEW));placeKnob('#role','button.on')}
+function go(id){$(id).scrollIntoView({behavior:'smooth',block:'start'})}
+document.querySelectorAll('#dock button').forEach(b=>b.onclick=()=>go(b.dataset.s));
+const secs=['s-home','s-tasks','s-reels','s-cal','s-tg'];
+function onScroll(){let cur=secs[0];secs.forEach(s=>{if($(s).getBoundingClientRect().top<window.innerHeight*.4)cur=s});
+  document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));placeKnob('#dock','button.on')}
+window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{onScroll();applyRole()});
+
+function renderAll(full=true){renderStats();renderWall();renderCal();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
+
+// ── старт ──
+(async()=>{
+  const m=location.hash.match(/k=([A-Za-z0-9-]+)/);
+  if(m){history.replaceState(null,'',location.pathname+location.search);try{await sb.auth.signOut({scope:'local'});await loginWithCode(m[1])}catch(e){showLogin();$('loginErr').textContent='Ссылка не сработала, введите код вручную';return}}
+  try{await start()}catch(e){console.error(e);showLogin();$('loginErr').textContent='Не получилось загрузить кабинет, попробуйте ещё раз'}
+})();
+</script>
+</body>
+</html>
