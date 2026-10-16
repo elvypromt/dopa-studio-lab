@@ -260,6 +260,31 @@ body.studio .studio-only{display:revert}
 .lg-refract .dock,.lg-refract .top .bar{backdrop-filter:url(#lgL) blur(14px) saturate(190%)}
 .out{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--muted);flex:none}
 .out.off{color:var(--rose-deep)}
+
+/* профиль Instagram из обложек */
+.phone-wrap{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start}
+.phone{width:360px;max-width:100%;border-radius:40px;padding:18px 12px 24px;box-shadow:0 30px 60px -20px rgba(96,44,74,.35),inset 0 0 0 1px rgba(255,255,255,.6)}
+.ig-top{display:flex;align-items:center;gap:18px;padding:6px 8px}
+.ig-ava{width:76px;height:76px;border-radius:50%;background:#fff;padding:14px;box-shadow:0 0 0 2px #fff,0 0 0 4px #D9B3BE;flex:none;display:grid;place-items:center;overflow:hidden}
+.ig-ava img{width:100%;height:100%;object-fit:contain}
+.ig-st{display:flex;gap:18px;flex:1;justify-content:space-around}
+.ig-st div{display:grid;text-align:center}.ig-st b{font-size:17px}.ig-st span{font-size:12px;color:var(--muted)}
+.ig-bio{padding:8px 8px 4px;font-size:13px;line-height:1.4}.ig-bio b{display:block;margin-bottom:2px}
+.ig-hl{display:flex;gap:14px;padding:12px 8px 6px;overflow-x:auto;scrollbar-width:none}
+.ig-h{display:grid;justify-items:center;gap:5px;font-size:11px;color:var(--body);flex:none}
+.ig-hc{width:60px;height:60px;border-radius:50%;overflow:hidden;background:#2E1B28;box-shadow:0 0 0 2px #fff,0 0 0 3.5px rgba(46,27,40,.35);display:grid;place-items:center;color:#fff;font-family:var(--serif);font-size:24px}
+.ig-hc img{width:100%;height:100%;object-fit:cover}
+.ig-tabs{display:flex;margin:10px -12px 0;border-top:1px solid rgba(46,27,40,.1)}
+.ig-tabs i{flex:1;height:2px;margin-top:-1px}.ig-tabs i.on{background:var(--ink)}
+.ig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:2px -12px 0;background:rgba(255,255,255,.4)}
+.ig-c{position:relative;aspect-ratio:9/16;overflow:hidden;cursor:pointer;background:linear-gradient(160deg,#D9B3BE,#B9A5E6)}
+.ig-c img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s var(--spring)}
+.ig-c:hover img{transform:scale(1.06)}
+.ig-c .noimg{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--serif);font-size:28px;color:rgba(255,255,255,.85)}
+.ig-c.plan::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7);background:repeating-linear-gradient(135deg,rgba(255,255,255,.18) 0 6px,transparent 6px 14px)}
+.ig-c .pin{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(46,27,40,.4)}
+.phone-note{max-width:360px;padding-top:12px}
+@media(max-width:760px){.phone-wrap{grid-template-columns:1fr}.phone{margin:0 auto}}
 /* ── живая версия ── */
 .login{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px}
 .login .card{width:min(420px,100%);padding:34px 30px 28px;text-align:center}
@@ -386,6 +411,24 @@ body.studio .studio-only{display:revert}
     <div class="studio-only" style="margin-top:16px"><button class="btn sm" id="newReel">+ Новый ролик</button></div>
   </section>
 
+  <section id="s-profile">
+    <div class="sh">
+      <div><div class="eyebrow">Как это выглядит в Instagram</div><h2>Профиль <em>вживую</em></h2></div>
+      <div class="seg" id="pmode"><div class="knob"></div><button data-m="now" class="on">Сейчас</button><button data-m="plan">С планом</button></div>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone glass">
+        <div class="ig-top"><div class="ig-ava" id="igAva"></div>
+          <div class="ig-st"><div><b id="igPosts">0</b><span>posts</span></div><div><b>—</b><span>followers</span></div><div><b>—</b><span>following</span></div></div></div>
+        <div class="ig-bio"><b id="igName"></b><span>Posting by hand is over.<br>One post → 10 networks, from your browser or your AI.</span></div>
+        <div class="ig-hl" id="igHl"></div>
+        <div class="ig-tabs"><i class="on"></i><i></i><i></i></div>
+        <div class="ig-grid" id="igGrid"></div>
+      </div>
+      <div class="phone-note sub">Слева направо, сверху вниз: так ролики встанут в профиле. «Сейчас» — только опубликованные, «С планом» — плюс одобренные и те, что уже в Publora. Нажмите на обложку, чтобы открыть ролик.</div>
+    </div>
+  </section>
+
   <section id="s-cal">
     <div class="sh">
       <div><div class="eyebrow">Когда что выходит · перетащите ролик на другой день</div><h2>Календарь <em>выхода</em></h2></div>
@@ -437,6 +480,7 @@ body.studio .studio-only{display:revert}
   <button data-s="s-home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg><span>Обзор</span></button>
   <button data-s="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Решения</span></button>
   <button data-s="s-reels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/></svg><span>Ролики</span></button>
+  <button data-s="s-profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.3" cy="6.7" r=".8" fill="currentColor"/></svg><span>Профиль</span></button>
   <button data-s="s-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Календарь</span></button>
   <button data-s="s-tg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Чат</span></button>
 </nav>
@@ -457,11 +501,13 @@ const BUCKET='cabinet';
 const ST={
   work:{t:'В работе',c:'#B7A3AE'},
   rev:{t:'На проверке',c:'#D9906F'},
+  fix:{t:'Переделать',c:'#C9566B'},
+  hold:{t:'Сомневаюсь',c:'#9C86D9'},
   ok:{t:'Одобрен',c:'#6E9580'},
   sched:{t:'В Publora',c:'#8E9BDB'},
   pub:{t:'Опубликован',c:'#B86F82'}
 };
-const ORDER=['work','rev','ok','sched','pub'];
+const ORDER=['work','rev','fix','hold','ok','sched','pub'];
 const DG_COLS=[{k:'dec',t:'Решения',c:'#6E9580'},{k:'todo',t:'Задачи',c:'#8E9BDB'},{k:'q',t:'Вопросы без ответа',c:'#D9906F'}];
 const DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 const MONS=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
@@ -607,6 +653,22 @@ function renderWall(){
   document.querySelectorAll('.tile').forEach(t=>{t.onclick=()=>openSheet(t.dataset.id);t.onpointermove=e=>{const b=t.getBoundingClientRect();t.style.setProperty('--ry',((e.clientX-b.left)/b.width-.5)*8+'deg')}});
 }
 
+// ── профиль Instagram из обложек ──
+let PMODE='now';
+const HLS=[{t:'About us',code:'51'},{t:'Works with',code:'48'},{t:'Pricing'},{t:'How to use'}];
+function renderProfile(){
+  const keep=PMODE==='now'?['pub']:['pub','sched','ok'];
+  const list=REELS.filter(r=>keep.includes(r.status)).sort((a,b)=>(b.day||'').localeCompare(a.day||'')||(b.sort-a.sort));
+  $('igPosts').textContent=list.length;$('igName').textContent=CL.name;
+  const lg=url(CL.logo_path);$('igAva').innerHTML=lg?`<img src="${lg}" alt="">`:'';
+  $('igHl').innerHTML=HLS.map(h=>{const r=h.code&&REELS.find(x=>x.code===h.code);const p=r&&url(r.poster_path);
+    return `<div class="ig-h"><div class="ig-hc">${p?`<img src="${p}" alt="">`:`<b>${esc(h.t[0])}</b>`}</div><span>${esc(h.t)}</span></div>`}).join('');
+  $('igGrid').innerHTML=list.map(r=>{const p=url(r.poster_path);return `<div class="ig-c ${r.status!=='pub'?'plan':''}" data-id="${r.id}" title="${esc(r.code+' · '+r.title)}">${p?`<img src="${p}" alt="" loading="lazy">`:`<div class="noimg">${esc(r.code)}</div>`}${r.pin?'<i class="pin"></i>':''}</div>`}).join('')
+    +(list.length?'':'<div class="empty" style="grid-column:1/-1">Пока ничего не опубликовано</div>');
+  $('igGrid').querySelectorAll('.ig-c').forEach(c=>c.onclick=()=>openSheet(c.dataset.id));
+}
+document.querySelectorAll('#pmode button').forEach(b=>b.onclick=()=>{PMODE=b.dataset.m;document.querySelectorAll('#pmode button').forEach(x=>x.classList.toggle('on',x===b));placeKnob('#pmode','button.on');renderProfile();tick(760)});
+
 // ── календарь ──
 function renderCal(){
   $('weeks').innerHTML=CL.weeks.map(w=>`<button class="chip ${W===w.id?'on':''}" data-w="${w.id}">${esc(w.lab.replace('Неделя ','Нед '))}</button>`).join('');
@@ -727,7 +789,8 @@ function renderSheet(soft){
     <div class="err" id="cmErr"></div>
     <div class="approve-row">
       <button class="btn pri" id="approve">${['ok','sched','pub'].includes(r.status)?'Одобрено':'Одобрить ролик'}</button>
-      <span class="sub">${st?'Вы смотрите как студия: статус и подпись можно менять':'После одобрения ролик уйдёт в очередь Publora'}</span>
+      ${r.status==='pub'?'':`<button class="btn sm" id="askFix">${r.status==='fix'?'Ждёт правок':'Нужна правка'}</button>`}
+      <span class="sub">${st?'Вы смотрите как студия: статус и подпись можно менять':'«Нужна правка» + комментарий к секунде = ролик уходит на доработку до публикации'}</span>
     </div>`;
   renderComments();
   const b=$('sheetBody');
@@ -744,7 +807,8 @@ function renderSheet(soft){
     const {data,error}=await sb.from('comments').insert({client_id:CL.id,reel_id:r.id,t,body:x}).select().single();
     $('cmGo').disabled=false;if(error)return fail(error,'Комментарий не отправился');
     if(!CMS.find(c=>c.id===data.id))CMS.push(data);CMS.sort((a,b)=>a.t-b.t);inp.value='';renderComments();renderWall();toast('Комментарий к '+fmt(t)+' отправлен')};
-  $('approve').onclick=async()=>{if(!['work','rev'].includes(r.status))return;const {error}=await sb.rpc('approve_reel',{r:r.id});if(error)return fail(error);r.status='ok';renderSheet();renderAll(false);toast('Ролик '+r.code+' одобрен')};
+  const fx=$('askFix');if(fx)fx.onclick=async()=>{if(r.status==='fix')return;const {error}=await sb.rpc('request_fix',{r:r.id});if(error)return fail(error);r.status='fix';renderSheet();renderAll(false);toast('Ролик '+r.code+' отправлен на доработку. Напишите, что поправить')};
+  $('approve').onclick=async()=>{if(!['work','rev','fix','hold'].includes(r.status))return;const {error}=await sb.rpc('approve_reel',{r:r.id});if(error)return fail(error);r.status='ok';renderSheet();renderAll(false);toast('Ролик '+r.code+' одобрен')};
 }
 function renderComments(){
   const r=CUR;if(!r)return;const st=studio();const cm=CMS.filter(c=>c.reel_id===r.id);
@@ -797,7 +861,7 @@ function onScroll(){let cur=secs[0];secs.forEach(s=>{if($(s).getBoundingClientRe
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));placeKnob('#dock','button.on')}
 window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{onScroll();applyRole()});
 
-function renderAll(full=true){renderStats();renderWall();renderCal();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
+function renderAll(full=true){renderStats();renderWall();renderProfile();renderCal();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
 
 // ── старт ──
 (async()=>{

@@ -58,7 +58,7 @@ create table public.reels (
   theme text,
   cta text,
   pin boolean not null default false,
-  status text not null default 'work' check (status in ('work','rev','ok','sched','pub')),
+  status text not null default 'work' check (status in ('work','rev','fix','hold','ok','sched','pub')),
   video_path text,
   poster_path text,
   sort int not null default 0,
@@ -164,7 +164,7 @@ declare cid uuid; st text;
 begin
   select client_id, status into cid, st from reels where id = r;
   if cid is null or not is_member(cid) then raise exception 'нет доступа'; end if;
-  if st in ('work','rev') then update reels set status = 'ok' where id = r; return 'ok'; end if;
+  if st in ('work','rev','fix','hold') then update reels set status = 'ok' where id = r; return 'ok'; end if;
   return st;
 end $$;
 
@@ -251,3 +251,15 @@ alter publication supabase_realtime add table public.reels, public.comments, pub
 -- триггерные функции не нужны в API
 revoke execute on function public.comments_fill() from authenticated, anon, public;
 revoke execute on function public.touch() from authenticated, anon, public;
+
+-- клиент просит правку: ролик уходит на доработку до публикации
+create or replace function public.request_fix(r uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare cid uuid; st text;
+begin
+  select client_id, status into cid, st from reels where id = r;
+  if cid is null or not is_member(cid) then raise exception 'нет доступа'; end if;
+  update reels set status = 'fix' where id = r; return 'fix';
+end $$;
+revoke execute on function public.request_fix from public, anon;
+grant execute on function public.request_fix to authenticated;
