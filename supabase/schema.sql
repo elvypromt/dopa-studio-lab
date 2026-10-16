@@ -263,3 +263,23 @@ begin
 end $$;
 revoke execute on function public.request_fix from public, anon;
 grant execute on function public.request_fix to authenticated;
+
+-- ── гайды: слово-призыв в конце ролика → что бот присылает в директ (16.10) ──
+create table public.guides (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete cascade,
+  keyword text not null,             -- совпадает с reels.cta
+  title text not null,
+  note text default '',              -- пояснение для команды
+  reply text default '',             -- текст, который бот пишет в директ
+  url text,                          -- ссылка
+  path text, file_name text,         -- файл в bucket: <client_id>/guides/...
+  status text not null default 'draft' check (status in ('draft','ready','live')),
+  sort int default 0,
+  created_at timestamptz default now(),
+  unique (client_id, keyword)
+);
+alter table public.guides enable row level security;
+create policy guides_read  on public.guides for select to authenticated using (is_member(client_id));
+create policy guides_write on public.guides for all to authenticated using (is_studio(client_id)) with check (is_studio(client_id));
+alter publication supabase_realtime add table public.guides;

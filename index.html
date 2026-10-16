@@ -325,6 +325,37 @@ body.studio .studio-only{display:revert}
 .task .who{font-size:12px;color:var(--muted);font-weight:600}
 .task .del,.item .del{align-self:flex-start}
 .out.off{color:var(--rose-deep)}
+
+/* гайды, призыв, лента */
+.feed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fi{display:flex;gap:12px;align-items:center;padding:10px;border-radius:20px;cursor:pointer;transition:transform .35s var(--spring)}
+.fi:hover{transform:translateY(-2px)}
+.fi img,.fi .noimg{width:44px;height:78px;border-radius:10px;object-fit:cover;flex:none;background:linear-gradient(160deg,#D9B3BE,#B9A5E6);display:grid;place-items:center;font-weight:800;color:#fff}
+.fi .tx{min-width:0;font-size:13px;line-height:1.4;color:var(--body)}
+.fi .tx b{color:var(--ink)}
+.fi .tx .q{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink);font-weight:600}
+.fi .ts{font-weight:800;color:var(--lilac);background:var(--lilac-soft);border-radius:999px;padding:2px 8px;font-size:12px;margin-right:6px}
+.fi.res{opacity:.55}
+.guides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.gd{padding:20px;border-radius:var(--r-lg);display:grid;gap:10px;align-content:start}
+.gd .kw{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kwb{font-family:ui-monospace,Menlo,monospace;font-weight:800;letter-spacing:.06em;font-size:13px;color:#fff;background:linear-gradient(135deg,#C98596,#9C86D9);padding:6px 12px;border-radius:999px}
+.gst{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.55);color:var(--body)}
+.gst.ready{color:#2E7D4F;background:#D9F2E2}.gst.live{color:#fff;background:#4FA36F}
+.gd h3{margin:0;font-size:18px;line-height:1.25;color:var(--ink)}
+.gd .sub{font-size:13px}
+.gd .rl{display:flex;flex-wrap:wrap;gap:6px}
+.gd .rl button{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.6);color:var(--ink)}
+.gd .ge{display:none;gap:8px}
+body.studio .gd .ge{display:grid}
+.gd .ge .field{padding:9px 12px;font-size:13px}
+.gd .ge textarea.field{min-height:64px;resize:vertical;font-weight:500}
+.ctab{border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.5);box-shadow:inset 0 1px 0 #fff;display:grid;gap:8px;font-size:14px;color:var(--ink)}
+.ctab .ln{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ctab .arr{color:var(--muted)}
+.ctab .row{display:flex;gap:8px;flex-wrap:wrap}
+.ctab .row .field{flex:1;min-width:120px;padding:9px 12px;font-size:14px}
+@media(max-width:760px){.feed,.guides{grid-template-columns:1fr}}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -387,6 +418,12 @@ body.studio .studio-only{display:revert}
     </div>
   </section>
 
+  <section id="s-feed">
+    <div class="sh"><div><div class="eyebrow">Нажмите, чтобы открыть ролик на этой секунде</div><h2>Свежие <em>комментарии</em></h2></div>
+      <div class="filters"><button class="chip" id="feedAll">Все ролики</button><button class="chip" id="feedGuides">Призывы и гайды</button></div></div>
+    <div class="feed" id="feed"></div>
+  </section>
+
   <section id="s-tasks">
     <div class="sh"><div><div class="eyebrow">Нужен ваш ответ</div><h2>Решения <em>за вами</em></h2></div></div>
     <div class="tasks" id="tasks"></div>
@@ -411,6 +448,16 @@ body.studio .studio-only{display:revert}
     <div class="studio-only" style="margin-top:16px"><button class="btn sm" id="newReel">+ Новый ролик</button></div>
   </section>
 
+  <section id="s-guides">
+    <div class="sh"><div><div class="eyebrow">Слово в комментарии → бот присылает в директ</div><h2>Призывы <em>и гайды</em></h2></div></div>
+    <div class="guides" id="guides"></div>
+    <form class="form glass studio-only" id="gForm">
+      <div class="eyebrow">Новый призыв</div>
+      <div class="row"><input class="field" name="kw" placeholder="Слово, например AGENT" required style="flex:0 1 200px;text-transform:uppercase"><input class="field" name="title" placeholder="Название гайда" required></div>
+      <div><button class="btn pri sm" type="submit">Добавить</button></div>
+    </form>
+  </section>
+
   <section id="s-profile">
     <div class="sh">
       <div><div class="eyebrow">Как это выглядит в Instagram</div><h2>Профиль <em>вживую</em></h2></div>
@@ -425,7 +472,7 @@ body.studio .studio-only{display:revert}
         <div class="ig-tabs"><i class="on"></i><i></i><i></i></div>
         <div class="ig-grid" id="igGrid"></div>
       </div>
-      <div class="phone-note sub">Слева направо, сверху вниз: так ролики встанут в профиле. «Сейчас» — только опубликованные, «С планом» — плюс одобренные и те, что уже в Publora. Нажмите на обложку, чтобы открыть ролик.</div>
+      <div class="phone-note sub">Слева направо, сверху вниз: так ролики встанут в профиле. «Сейчас» — только опубликованные, «С планом» — плюс одобренные и запланированные. Нажмите на обложку, чтобы открыть ролик.</div>
     </div>
   </section>
 
@@ -481,6 +528,7 @@ body.studio .studio-only{display:revert}
   <button data-s="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Решения</span></button>
   <button data-s="s-reels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/></svg><span>Ролики</span></button>
   <button data-s="s-profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.3" cy="6.7" r=".8" fill="currentColor"/></svg><span>Профиль</span></button>
+  <button data-s="s-guides"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Гайды</span></button>
   <button data-s="s-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Календарь</span></button>
   <button data-s="s-tg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Чат</span></button>
 </nav>
@@ -504,7 +552,7 @@ const ST={
   fix:{t:'Переделать',c:'#C9566B'},
   hold:{t:'Сомневаюсь',c:'#9C86D9'},
   ok:{t:'Одобрен',c:'#6E9580'},
-  sched:{t:'В Publora',c:'#8E9BDB'},
+  sched:{t:'Запланирован',c:'#8E9BDB'},
   pub:{t:'Опубликован',c:'#B86F82'}
 };
 const ORDER=['work','rev','fix','hold','ok','sched','pub'];
@@ -519,7 +567,7 @@ const label=d=>DOW[(d.getDay()+6)%7]+' '+d.getDate()+' '+MONS[d.getMonth()];
 const dayLabel=s=>{const d=fromIso(s);return d?label(d):'без даты'};
 const now0=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())};
 
-let CL=null,ME=null,ALL_ME=[],REELS=[],CMS=[],TASKS=[],DG=[],PEOPLE=[],SIGNED={};
+let CL=null,ME=null,ALL_ME=[],REELS=[],CMS=[],TASKS=[],DG=[],PEOPLE=[],GUIDES=[],SIGNED={};
 let VIEW='studio',F='all',W=null,CUR=null;
 const studio=()=>ME&&ME.role==='studio'&&VIEW==='studio';
 const isStudioUser=()=>ME&&ME.role==='studio';
@@ -574,6 +622,7 @@ async function loadReels(){const {data,error}=await sb.from('reels').select('*')
 async function loadComments(){const {data,error}=await sb.from('comments').select('*').eq('client_id',CL.id).order('t');if(error)throw error;CMS=data}
 async function loadTasks(){const {data,error}=await sb.from('tasks').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error)throw error;TASKS=data}
 async function loadDigest(){const {data,error}=await sb.from('digest').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error)throw error;DG=data}
+async function loadGuides(){const {data,error}=await sb.from('guides').select('*').eq('client_id',CL.id).order('sort').order('created_at');if(error){console.warn(error);GUIDES=[];return}GUIDES=data}
 async function loadPeople(){if(!isStudioUser()){PEOPLE=[];return}const {data}=await sb.from('members').select('id,name,role,active,last_login,user_id').eq('client_id',CL.id).order('created_at');PEOPLE=data||[]}
 
 async function start(){
@@ -589,8 +638,8 @@ async function start(){
   CL=cls.find(c=>c.slug===want)||cls[0];
   ME=mem.find(m=>m.client_id===CL.id);
   VIEW=ME.role==='studio'?'studio':'client';
-  await Promise.all([loadReels(),loadComments(),loadTasks(),loadDigest(),loadPeople()]);
-  await sign([CL.logo_path,...REELS.map(r=>r.poster_path),...TASKS.flatMap(t=>t.kind==='pick'?t.opts.map(o=>o[1]):[])]);
+  await Promise.all([loadReels(),loadComments(),loadTasks(),loadDigest(),loadPeople(),loadGuides()]);
+  await sign([...HLS.map(h=>CL.id+'/'+h.p),CL.logo_path,...REELS.map(r=>r.poster_path),...TASKS.flatMap(t=>t.kind==='pick'?t.opts.map(o=>o[1]):[])]);
   document.title=CL.name+' · Dopa Room';
   $('login').hidden=true;$('boot').hidden=true;$('app').hidden=false;
   W=currentWeek()?.id||CL.weeks[0]?.id;
@@ -606,8 +655,9 @@ function subscribe(){
   const f='client_id=eq.'+CL.id;
   chan=sb.channel('c-'+CL.id)
     .on('postgres_changes',{event:'*',schema:'public',table:'reels',filter:f},()=>later('r',async()=>{await loadReels();await sign(REELS.map(r=>r.poster_path));renderAll(false);if(sheetOpen())renderSheet(true)}))
-    .on('postgres_changes',{event:'*',schema:'public',table:'comments',filter:f},()=>later('c',async()=>{await loadComments();renderWall();if(sheetOpen())renderComments()}))
+    .on('postgres_changes',{event:'*',schema:'public',table:'comments',filter:f},()=>later('c',async()=>{await loadComments();renderWall();renderFeed();if(sheetOpen())renderComments()}))
     .on('postgres_changes',{event:'*',schema:'public',table:'tasks',filter:f},()=>later('t',async()=>{await loadTasks();renderTasks()}))
+    .on('postgres_changes',{event:'*',schema:'public',table:'guides',filter:f},()=>later('g',async()=>{await loadGuides();renderGuides();renderFeed();if(sheetOpen())renderSheet(true)}))
     .on('postgres_changes',{event:'*',schema:'public',table:'digest',filter:f},()=>later('d',async()=>{await loadDigest();renderTG()}))
     .subscribe();
 }
@@ -655,14 +705,15 @@ function renderWall(){
 
 // ── профиль Instagram из обложек ──
 let PMODE='now';
-const HLS=[{t:'About us',code:'51'},{t:'Works with',code:'48'},{t:'Pricing'},{t:'How to use'}];
+const HLS=[{t:'About us',code:'51',p:'brand/hl_51.jpg'},{t:'Works with',code:'48',p:'brand/hl_48.jpg'},{t:'Pricing',code:'52',p:'brand/hl_52.jpg'},{t:'How to use',code:'49',p:'brand/hl_49.jpg'}];
 function renderProfile(){
   const keep=PMODE==='now'?['pub']:['pub','sched','ok'];
   const list=REELS.filter(r=>keep.includes(r.status)).sort((a,b)=>(b.day||'').localeCompare(a.day||'')||(b.sort-a.sort));
   $('igPosts').textContent=list.length;$('igName').textContent=CL.name;
   const lg=url(CL.logo_path);$('igAva').innerHTML=lg?`<img src="${lg}" alt="">`:'';
-  $('igHl').innerHTML=HLS.map(h=>{const r=h.code&&REELS.find(x=>x.code===h.code);const p=r&&url(r.poster_path);
-    return `<div class="ig-h"><div class="ig-hc">${p?`<img src="${p}" alt="">`:`<b>${esc(h.t[0])}</b>`}</div><span>${esc(h.t)}</span></div>`}).join('');
+  $('igHl').innerHTML=HLS.map(h=>{const r=h.code&&REELS.find(x=>x.code===h.code);const p=url(CL.id+'/'+h.p)||(r&&url(r.poster_path));
+    return `<div class="ig-h" ${r?`data-id="${r.id}" style="cursor:pointer"`:''}><div class="ig-hc">${p?`<img src="${p}" alt="" style="object-position:50% 30%">`:`<b>${esc(h.t[0])}</b>`}</div><span>${esc(h.t)}</span></div>`}).join('');
+  $('igHl').querySelectorAll('[data-id]').forEach(c=>c.onclick=()=>openSheet(c.dataset.id));
   $('igGrid').innerHTML=list.map(r=>{const p=url(r.poster_path);return `<div class="ig-c ${r.status!=='pub'?'plan':''}" data-id="${r.id}" title="${esc(r.code+' · '+r.title)}">${p?`<img src="${p}" alt="" loading="lazy">`:`<div class="noimg">${esc(r.code)}</div>`}${r.pin?'<i class="pin"></i>':''}</div>`}).join('')
     +(list.length?'':'<div class="empty" style="grid-column:1/-1">Пока ничего не опубликовано</div>');
   $('igGrid').querySelectorAll('.ig-c').forEach(c=>c.onclick=()=>openSheet(c.dataset.id));
@@ -783,6 +834,8 @@ function renderSheet(soft){
       :`<div class="cap">${esc(capBody(r.caption))||'Подпись появится позже'}</div>
     <div class="lbl">Хэштеги</div>
     <div class="tags">${hashtags(r.caption).map(h=>`<span class="tag">${esc(h)}</span>`).join('')||'<span class="empty">Пока нет</span>'}</div>`}
+    <div class="lbl">Призыв в конце ролика ${r.cta?`<button class="btn sm" id="toGuide">Все гайды</button>`:''}</div>
+    ${ctaBlock(r,st)}
     <div class="lbl">Комментарии <span id="cmN" style="letter-spacing:0;text-transform:none;font-weight:600"></span></div>
     <div class="comments" id="cmList"></div>
     <div class="compose"><textarea id="cmIn" placeholder="Вот здесь я бы сделала надпись крупнее"></textarea><button class="btn lil" id="cmGo" title="Отправить комментарий к этой секунде">${fmt(vid.currentTime||0)}</button></div>
@@ -793,6 +846,7 @@ function renderSheet(soft){
       <span class="sub">${st?'Вы смотрите как студия: статус и подпись можно менять':'«Нужна правка» + комментарий к секунде = ролик уходит на доработку до публикации'}</span>
     </div>`;
   renderComments();
+  bindCta(r);
   const b=$('sheetBody');
   b.querySelectorAll('[data-st]').forEach(x=>x.onclick=async()=>{const old=r.status;r.status=x.dataset.st;renderSheet();renderAll(false);
     const {error}=await sb.from('reels').update({status:r.status}).eq('id',r.id);if(error){r.status=old;renderSheet();renderAll(false);fail(error)}});
@@ -856,12 +910,82 @@ document.querySelectorAll('#role button').forEach(b=>b.onclick=()=>{VIEW=b.datas
 function applyRole(){document.body.classList.toggle('studio',studio());document.querySelectorAll('#role button').forEach(b=>b.classList.toggle('on',b.dataset.r===VIEW));placeKnob('#role','button.on')}
 function go(id){$(id).scrollIntoView({behavior:'smooth',block:'start'})}
 document.querySelectorAll('#dock button').forEach(b=>b.onclick=()=>go(b.dataset.s));
-const secs=['s-home','s-tasks','s-reels','s-cal','s-tg'];
+// ── призывы и гайды ──
+const GST={draft:'Черновик',ready:'Готов',live:'Работает в директе'};
+const guideOf=kw=>kw&&GUIDES.find(g=>g.keyword.toUpperCase()===String(kw).trim().toUpperCase());
+const reelsOf=kw=>REELS.filter(r=>(r.cta||'').trim().toUpperCase()===kw.toUpperCase());
+async function openGuide(id){const g=GUIDES.find(x=>x.id===id);if(!g)return;
+  if(g.path){const {data,error}=await sb.storage.from(BUCKET).createSignedUrl(g.path,3600);if(error)return fail(error);window.open(data.signedUrl,'_blank','noopener')}
+  else if(g.url)window.open(g.url,'_blank','noopener');else toast('Файл ещё не прикреплён')}
+function guideLinks(g){return `${g.path?`<button class="btn sm" data-og="${g.id}">Открыть файл</button>`:''}${g.url&&!g.path?`<button class="btn sm" data-og="${g.id}">Открыть ссылку</button>`:''}${g.url&&g.path?`<a class="btn sm" href="${esc(g.url)}" target="_blank" rel="noopener">Ссылка</a>`:''}`}
+function ctaBlock(r,st){const g=guideOf(r.cta);
+  return `<div class="ctab">
+    ${r.cta?`<div class="ln"><span>Пишут в комментарии</span><span class="kwb">${esc(r.cta.toUpperCase())}</span><span class="arr">→ в директ приходит</span>
+      ${g?`<b>${esc(g.title)}</b><span class="gst ${g.status}">${GST[g.status]}</span>`:'<span class="empty">гайда для этого слова пока нет</span>'}</div>
+      ${g?`<div class="ln">${guideLinks(g)}${g.note?`<span class="sub">${esc(g.note)}</span>`:''}</div>`:''}`
+    :'<div class="empty">У этого ролика нет призыва в конце</div>'}
+    ${st?`<div class="row"><input class="field" id="eCta" value="${esc(r.cta||'')}" placeholder="Слово-призыв" list="kwList" style="text-transform:uppercase"><datalist id="kwList">${GUIDES.map(x=>`<option value="${esc(x.keyword)}">`).join('')}</datalist><button class="btn lil sm" id="eCtaSave">Сохранить призыв</button></div>`:''}
+  </div>`}
+function bindCta(r){
+  $('sheetBody').querySelectorAll('[data-og]').forEach(b=>b.onclick=()=>openGuide(b.dataset.og));
+  const tg=$('toGuide');if(tg)tg.onclick=()=>{closeSheetSafe();go('s-guides')};
+  const sv=$('eCtaSave');if(sv)sv.onclick=async()=>{const v=$('eCta').value.trim().toUpperCase();const {error}=await sb.from('reels').update({cta:v}).eq('id',r.id);if(error)return fail(error);r.cta=v;renderSheet();renderGuides();toast('Призыв сохранён')};
+}
+function closeSheetSafe(){$('scrim').classList.remove('on');$('sheet').classList.remove('on');try{vid.pause()}catch(e){}}
+function renderGuides(){
+  const st=studio();
+  $('guides').innerHTML=GUIDES.map(g=>{const rs=reelsOf(g.keyword);
+    return `<div class="gd glass" id="g-${g.id}">
+      <div class="kw"><span class="kwb">${esc(g.keyword)}</span><span class="gst ${g.status}">${GST[g.status]}</span><span class="sub">${rs.length} ${plural(rs.length,'ролик','ролика','роликов')}</span></div>
+      <h3>${esc(g.title)}</h3>
+      ${g.note?`<div class="sub">${esc(g.note)}</div>`:''}
+      ${g.reply?`<div class="cap" style="max-height:120px">${esc(g.reply)}</div>`:''}
+      <div class="ln" style="display:flex;gap:8px;flex-wrap:wrap">${guideLinks(g)||'<span class="empty">Файл или ссылка пока не прикреплены</span>'}</div>
+      ${rs.length?`<div class="rl">${rs.map(r=>`<button data-or="${r.id}" title="${esc(r.title)}">${esc(r.code)} · ${esc(r.title.length>22?r.title.slice(0,22)+'…':r.title)}</button>`).join('')}</div>`:''}
+      ${st?`<div class="ge">
+        <input class="field" data-f="title" value="${esc(g.title)}" placeholder="Название">
+        <textarea class="field" data-f="note" placeholder="Пояснение для команды">${esc(g.note||'')}</textarea>
+        <textarea class="field" data-f="reply" placeholder="Текст, который бот пишет в директ">${esc(g.reply||'')}</textarea>
+        <input class="field" data-f="url" value="${esc(g.url||'')}" placeholder="Ссылка (https://…)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <select class="field" data-f="status" style="flex:0 1 200px">${Object.keys(GST).map(k=>`<option value="${k}" ${k===g.status?'selected':''}>${GST[k]}</option>`).join('')}</select>
+          <label class="btn sm upl">${g.path?'Заменить файл':'Прикрепить файл'}<input type="file" data-up="${g.id}"></label>
+          <button class="btn lil sm" data-gs="${g.id}">Сохранить</button></div></div>`:''}
+    </div>`}).join('')||'<div class="empty">Призывов пока нет</div>';
+  const box=$('guides');
+  box.querySelectorAll('[data-og]').forEach(b=>b.onclick=()=>openGuide(b.dataset.og));
+  box.querySelectorAll('[data-or]').forEach(b=>b.onclick=()=>openSheet(b.dataset.or));
+  box.querySelectorAll('[data-gs]').forEach(b=>b.onclick=async()=>{const card=$('g-'+b.dataset.gs);const upd={};
+    card.querySelectorAll('[data-f]').forEach(f=>upd[f.dataset.f]=f.value.trim()||null);upd.title=upd.title||'Без названия';upd.status=upd.status||'draft';
+    const {error}=await sb.from('guides').update(upd).eq('id',b.dataset.gs);if(error)return fail(error);Object.assign(GUIDES.find(x=>x.id===b.dataset.gs),upd);renderGuides();toast('Гайд сохранён')});
+  box.querySelectorAll('[data-up]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(!f)return;const g=GUIDES.find(x=>x.id===inp.dataset.up);
+    const safe=f.name.replace(/[^\w.\-]+/g,'_');const pth=`${CL.id}/guides/${g.keyword}_${Date.now()}_${safe}`;toast('Загружаю…');
+    const {error}=await sb.storage.from(BUCKET).upload(pth,f,{upsert:true,contentType:f.type||undefined});if(error)return fail(error);
+    const {error:e2}=await sb.from('guides').update({path:pth,file_name:f.name}).eq('id',g.id);if(e2)return fail(e2);g.path=pth;g.file_name=f.name;renderGuides();toast('Файл прикреплён')});
+}
+function plural(n,a,b,c){const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c}
+async function openAt(reelId,t){await openSheet(reelId);const seek=()=>{try{vid.currentTime=t;vid.play().catch(()=>{})}catch(e){}};if(vid.readyState>=1)seek();else vid.addEventListener('loadedmetadata',seek,{once:true})}
+function renderFeed(){
+  const list=CMS.slice().sort((a,b)=>(a.resolved-b.resolved)||String(b.created_at).localeCompare(String(a.created_at))).slice(0,8);
+  $('feed').innerHTML=list.map(c=>{const r=REELS.find(x=>x.id===c.reel_id);if(!r)return'';const p=url(r.poster_path);const g=guideOf(r.cta);
+    return `<div class="fi glass ${c.resolved?'res':''}" data-r="${r.id}" data-t="${c.t}">${p?`<img src="${p}" alt="">`:`<div class="noimg">${esc(r.code)}</div>`}
+      <div class="tx"><div><b>${esc(r.code)} · ${esc(r.title)}</b></div>
+      <div class="q"><span class="ts">${fmt(c.t)}</span>${esc(c.author_name||'')}: ${esc(c.body)}</div>
+      <div>${c.resolved?'исправлено · ':''}${r.cta?`призыв <b>${esc(r.cta)}</b>${g?' → '+esc(g.title):''}`:''}</div></div></div>`}).join('')||'<div class="empty">Комментариев пока нет. Откройте любой ролик, поставьте на паузу и напишите, что поменять.</div>';
+  $('feed').querySelectorAll('.fi').forEach(x=>x.onclick=()=>openAt(x.dataset.r,+x.dataset.t));
+}
+$('feedAll').onclick=()=>{F='all';renderFilters();renderWall();go('s-reels')};
+$('feedGuides').onclick=()=>go('s-guides');
+$('gForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);const kw=String(fd.get('kw')).trim().toUpperCase();
+  const {data,error}=await sb.from('guides').insert({client_id:CL.id,keyword:kw,title:String(fd.get('title')).trim(),sort:GUIDES.length+1}).select().single();
+  if(error)return fail(error,'Не получилось: такое слово уже есть?');GUIDES.push(data);e.target.reset();renderGuides();toast('Призыв добавлен')};
+
+const secs=['s-home','s-feed','s-tasks','s-reels','s-guides','s-profile','s-cal','s-tg'];
 function onScroll(){let cur=secs[0];secs.forEach(s=>{if($(s).getBoundingClientRect().top<window.innerHeight*.4)cur=s});
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));placeKnob('#dock','button.on')}
 window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{onScroll();applyRole()});
 
-function renderAll(full=true){renderStats();renderWall();renderProfile();renderCal();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
+function renderAll(full=true){renderStats();renderWall();renderProfile();renderCal();renderFeed();renderGuides();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
 
 // ── старт ──
 (async()=>{
