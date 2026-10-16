@@ -369,6 +369,31 @@ body.studio .gd .ge{display:grid}
 .ctab .row{display:flex;gap:8px;flex-wrap:wrap}
 .ctab .row .field{flex:1;min-width:120px;padding:9px 12px;font-size:14px}
 @media(max-width:760px){.feed,.guides{grid-template-columns:1fr}}
+/* стратегия */
+.strat{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.strat{grid-template-columns:1fr}}
+.scard{padding:20px;border-radius:24px;display:grid;gap:14px}
+.scard h3{margin:0;font-size:16px}
+.scard .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dw button{width:40px;height:40px;border-radius:12px;font-weight:800;font-size:12px;background:rgba(255,255,255,.5);color:var(--muted)}
+.dw button.on{background:var(--ink);color:#fff}
+.stp{display:flex;align-items:center;gap:6px}.stp button{width:30px;height:30px;border-radius:10px;background:rgba(255,255,255,.6);font-weight:800}
+.stp b{min-width:20px;text-align:center}
+.scard input[type=time],.scard input[type=date],.wk input{font:inherit;font-size:13px;padding:8px 10px;border-radius:12px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.6);color:var(--ink)}
+.wk{display:grid;gap:6px}.wk div{display:grid;grid-template-columns:54px 92px 1fr;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.wk div b{color:var(--ink)}.wk input{width:100%;box-sizing:border-box}
+.ssum{font-size:13px;line-height:1.5;color:var(--ink)}
+.thb{display:flex;height:8px;border-radius:99px;overflow:hidden}.thl{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.thl i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.q{display:grid;gap:6px}
+.qr{display:grid;grid-template-columns:22px 44px 1fr auto auto;gap:10px;align-items:center;padding:8px 12px;border-radius:16px;font-size:13px}
+.qr.lock{opacity:.6}.qr.drag{opacity:.35}.qr.over{outline:2px dashed #9C86D9}
+.qr .h{cursor:grab;color:var(--muted);text-align:center;user-select:none}
+.qr .c{font-weight:800}.qr .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.qr .th{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;color:#fff;white-space:nowrap}
+.qr .dt{font-size:12px;font-weight:700;white-space:nowrap;text-align:right}.qr .dt s{color:var(--muted);font-weight:500;margin-right:4px}
+.qr .dt.new{color:#9C4F6A}
+.qwk{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px 4px}
 /* процесс */
 .proc{display:grid;gap:22px}
 .pday>.dl{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px 4px}
@@ -518,9 +543,28 @@ body.studio .gd .ge{display:grid}
     </div>
   </section>
 
+  <section id="s-strat">
+    <div class="sh"><div><div class="eyebrow">Правила выхода · из них строится календарь</div><h2>Стратегия <em>выхода</em></h2></div>
+      <div class="studio-only"><button class="btn" id="stApply">Разложить по календарю</button></div></div>
+    <div class="strat">
+      <div style="display:grid;gap:18px">
+        <div class="scard glass"><h3>Ритм</h3>
+          <div class="sub">В какие дни выходят ролики</div>
+          <div class="row dw" id="stDays"></div>
+          <div class="row"><span class="sub">Роликов в день</span><div class="stp"><button data-per="-1">−</button><b id="stPer"></b><button data-per="1">+</button></div></div>
+          <div class="row"><span class="sub">Время</span><input type="time" id="stTime"><span class="sub">с</span><input type="date" id="stStart"></div>
+          <div class="ssum" id="stSum"></div>
+        </div>
+        <div class="scard glass"><h3>Темы роликов в очереди</h3><div class="thb" id="stBar"></div><div class="thl" id="stLeg"></div></div>
+        <div class="scard glass"><h3>Темы недель</h3><div class="wk" id="stWeeks"></div></div>
+      </div>
+      <div class="scard glass"><h3>Очередь <span class="sub" style="font-weight:500">· перетащите, чтобы поменять порядок. Справа дата после раскладки</span></h3><div class="q" id="stQ"></div></div>
+    </div>
+  </section>
+
   <section id="s-cal">
     <div class="sh">
-      <div><div class="eyebrow">Когда что выходит · перетащите ролик на другой день</div><h2>Календарь <em>выхода</em></h2></div>
+      <div><div class="eyebrow">Когда что выходит · перетащите ролик на другой день · правила во вкладке <a href="#s-strat" style="color:inherit">Стратегия</a></div><h2>Календарь <em>выхода</em></h2></div>
       <div class="cal-head" id="weeks"></div>
     </div>
     <div class="sub" id="weekName"></div>
@@ -572,6 +616,7 @@ body.studio .gd .ge{display:grid}
   <button data-s="s-reels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/></svg><span>Ролики</span></button>
   <button data-s="s-profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.3" cy="6.7" r=".8" fill="currentColor"/></svg><span>Профиль</span></button>
   <button data-s="s-guides"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Гайды</span></button>
+  <button data-s="s-strat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg><span>Стратегия</span></button>
   <button data-s="s-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Календарь</span></button>
   <button data-s="s-tg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span>Чат</span></button>
 </nav>
@@ -707,6 +752,79 @@ function subscribe(){
     .on('postgres_changes',{event:'*',schema:'public',table:'digest',filter:f},()=>later('d',async()=>{await loadDigest();renderTG()}))
     .subscribe();
 }
+
+// ── стратегия: ритм → очередь → даты ──
+const THC={S:'#D9A15F',A:'#9C86D9',N:'#6FA3C9',G:'#5FAE9B',P:'#C98596'};
+const DWJS=[1,2,3,4,5,6,0];
+const RH=()=>CL.rhythm||{days:[1,2,4,5,0],per:1,time:'18:00',start:iso(now0())};
+const locked=r=>r.status==='pub'||r.publora_status==='scheduled';
+const addD=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const monday=d=>addD(d,-((d.getDay()+6)%7));
+const wkDates=s=>{const e=addD(s,6);return s.getMonth()===e.getMonth()?`${s.getDate()}–${e.getDate()} ${MONS[s.getMonth()]}`:`${s.getDate()} ${MONS[s.getMonth()]} – ${e.getDate()} ${MONS[e.getMonth()]}`};
+function stPlan(){
+  const R=RH();const q=REELS.filter(r=>!locked(r)).sort((a,b)=>(a.sort??0)-(b.sort??0));
+  const busy={};REELS.filter(locked).forEach(r=>{if(r.day)busy[r.day]=(busy[r.day]||0)+1});
+  const out=new Map();let d=fromIso(R.start)||now0(),i=0,g=0;
+  if(R.days.length&&R.per>0)while(i<q.length&&g++<1000){if(R.days.includes(d.getDay())){let free=R.per-(busy[iso(d)]||0);while(free-->0&&i<q.length)out.set(q[i++].id,iso(d))}d=addD(d,1)}
+  const m0=monday(fromIso(R.start)||now0());const last=[...out.values()].pop();
+  const n=Math.max(CL.weeks.length,last?Math.floor((fromIso(last)-m0)/864e5/7)+1:1);
+  const weeks=Array.from({length:n},(_,k)=>{const s=addD(m0,7*k);return {id:'w'+(k+1),lab:'Неделя '+(k+1),name:CL.weeks[k]?.name||'',dates:wkDates(s),start:iso(s)}});
+  const wk=D=>{const k=Math.floor((fromIso(D)-m0)/864e5/7);return weeks[k]?.id||null};
+  return {q,out,weeks,wk,last};
+}
+let stSave;
+async function saveClient(patch,msg){Object.assign(CL,patch);const {error}=await sb.from('clients').update(patch).eq('id',CL.id);if(error)fail(error);else if(msg)toast(msg)}
+function renderStrat(){
+  if(!$('stQ'))return;const st=studio();const R=RH();const P=stPlan();
+  $('stDays').innerHTML=DWJS.map(j=>`<button data-dw="${j}" class="${R.days.includes(j)?'on':''}" ${st?'':'disabled'}>${DOW[(j+6)%7]}</button>`).join('');
+  $('stPer').textContent=R.per;document.querySelectorAll('[data-per]').forEach(b=>b.hidden=!st);
+  $('stTime').value=R.time;$('stStart').value=R.start;$('stTime').disabled=$('stStart').disabled=!st;
+  const perW=R.days.length*R.per;
+  $('stSum').innerHTML=!perW?'Не выбран ни один день':`<b>${perW} ${perW===1?'ролик':perW<5?'ролика':'роликов'} в неделю</b>, в ${R.time}. В очереди ${P.q.length}: хватит до <b>${P.last?esc(dayLabel(P.last)):'—'}</b>.<br><span class="sub">Опубликованные и запланированные в Publora стоят на своих местах.</span>`;
+  const cnt={};P.q.forEach(r=>{const k=r.theme||'?';cnt[k]=(cnt[k]||0)+1});
+  $('stBar').innerHTML=Object.entries(cnt).map(([k,v])=>`<i style="flex:${v};background:${THC[k]||'#bbb'}"></i>`).join('');
+  $('stLeg').innerHTML=Object.entries(cnt).map(([k,v])=>`<span><i style="background:${THC[k]||'#bbb'}"></i>${esc((CL.themes||{})[k]||'без темы')} · ${v}</span>`).join('');
+  $('stWeeks').innerHTML=P.weeks.map((w,k)=>`<div><b>Нед ${k+1}</b><span>${esc(w.dates)}</span>${st?`<input data-wn="${k}" value="${esc(w.name)}" placeholder="Тема недели">`:`<b>${esc(w.name||'—')}</b>`}</div>`).join('');
+  let lastW=null;
+  const row=r=>{const nd=P.out.get(r.id);const lk=locked(r);const ch=!lk&&nd&&nd!==r.day;
+    return `<div class="qr glass${lk?' lock':''}" ${st&&!lk?'draggable="true"':''} data-q="${r.id}"><span class="h">${lk?'🔒':st?'⋮⋮':''}</span><span class="c">${esc(r.code)}</span><span class="t" data-open="${r.id}">${esc(r.title)}</span>
+     ${r.theme?`<span class="th" style="background:${THC[r.theme]||'#bbb'}">${esc((CL.themes||{})[r.theme]||r.theme)}</span>`:'<span></span>'}
+     <span class="dt${ch?' new':''}">${lk?(r.status==='pub'?'вышел ':'Publora ')+esc(dayLabel(r.day)):ch?`${r.day?`<s>${esc(dayLabel(r.day))}</s>`:''}→ ${esc(dayLabel(nd))}`:esc(dayLabel(nd||r.day))}</span></div>`};
+  const lockedRows=REELS.filter(locked).sort((a,b)=>(a.day||'').localeCompare(b.day||''));
+  $('stQ').innerHTML=(lockedRows.length?`<div class="qwk">Уже вышли или стоят в Publora</div>`+lockedRows.map(row).join(''):'')+
+    P.q.map(r=>{const w=P.wk(P.out.get(r.id)||'');let h='';if(w&&w!==lastW){lastW=w;const W_=P.weeks.find(x=>x.id===w);h=`<div class="qwk">${esc(W_.lab)} · ${esc(W_.dates)}${W_.name?' · '+esc(W_.name):''}</div>`}return h+row(r)}).join('');
+  $('stQ').querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>openSheet(x.dataset.open));
+  if(!st)return;
+  let dragId=null;
+  $('stQ').querySelectorAll('.qr[draggable]').forEach(el=>{
+    el.ondragstart=e=>{dragId=el.dataset.q;el.classList.add('drag');e.dataTransfer.setData('text/plain',dragId)};
+    el.ondragend=()=>el.classList.remove('drag');
+    el.ondragover=e=>{e.preventDefault();el.classList.add('over')};el.ondragleave=()=>el.classList.remove('over');
+    el.ondrop=async e=>{e.preventDefault();el.classList.remove('over');const to=el.dataset.q;if(!dragId||dragId===to)return;
+      const ids=P.q.map(r=>r.id);ids.splice(ids.indexOf(dragId),1);ids.splice(ids.indexOf(to),0,dragId);
+      const ch=[];ids.forEach((id,k)=>{const r=REELS.find(x=>x.id===id);if(r.sort!==(k+1)*10){r.sort=(k+1)*10;ch.push(r)}});tick(520);renderStrat();
+      const res=await Promise.all(ch.map(r=>sb.from('reels').update({sort:r.sort}).eq('id',r.id)));const er=res.find(x=>x.error);if(er)fail(er.error)};
+  });
+}
+document.addEventListener('click',async e=>{
+  if(!studio())return;const R={...RH()};
+  const dw=e.target.closest('[data-dw]');if(dw){const j=+dw.dataset.dw;R.days=R.days.includes(j)?R.days.filter(x=>x!==j):[...R.days,j];await saveClient({rhythm:R});renderStrat();return}
+  const pe=e.target.closest('[data-per]');if(pe){R.per=Math.max(1,Math.min(6,R.per+ +pe.dataset.per));await saveClient({rhythm:R});renderStrat();return}
+  if(e.target.id==='stApply'){
+    const P=stPlan();const ch=P.q.filter(r=>{const d=P.out.get(r.id);return d&&(d!==r.day||P.wk(d)!==r.week)});
+    if(!confirm(`Поменяются даты у ${ch.length} роликов по ритму стратегии.\nОпубликованные и запланированные в Publora не трогаю.\nРазложить?`))return;
+    e.target.disabled=true;
+    const res=await Promise.all(ch.map(r=>sb.from('reels').update({day:P.out.get(r.id),week:P.wk(P.out.get(r.id))}).eq('id',r.id)));
+    await saveClient({weeks:P.weeks});e.target.disabled=false;
+    const er=res.find(x=>x.error);if(er)return fail(er.error);
+    await loadReels();W=currentWeek()?.id||CL.weeks[0]?.id;renderAll(false);toast(`Готово: ${ch.length} роликов разложены по календарю`)}
+});
+document.addEventListener('change',async e=>{
+  if(!studio())return;const R={...RH()};
+  if(e.target.id==='stTime'){R.time=e.target.value;await saveClient({rhythm:R},'Время сохранено');renderStrat()}
+  if(e.target.id==='stStart'&&e.target.value){R.start=e.target.value;await saveClient({rhythm:R},'Дата начала сохранена');renderStrat()}
+  const wn=e.target.closest('[data-wn]');if(wn){const P=stPlan();const ws=P.weeks.map((w,k)=>k===+wn.dataset.wn?{...w,name:wn.value.trim()}:(CL.weeks[k]?{...CL.weeks[k],name:w.name}:w));await saveClient({weeks:ws},'Тема недели сохранена');renderCal();renderStrat()}
+});
 
 // ── процесс: что сделано, по дням (записи пишет tools/room.mjs) ──
 const STG={idea:['Идея','#B79BD9'],script:['Сценарий','#8E9BDB'],board:['Раскадровка','#6FA3C9'],anim:['Анимация','#5FAE9B'],voice:['Озвучка','#D9A15F'],edit:['Монтаж','#D98A6F'],review:['На проверке','#C98596'],ready:['Готов','#4FA36F'],publora:['Publora','#30A567'],note:['Заметка','#9A8F98']};
@@ -1099,12 +1217,12 @@ $('gForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target)
   const {data,error}=await sb.from('guides').insert({client_id:CL.id,keyword:kw,title:String(fd.get('title')).trim(),sort:GUIDES.length+1}).select().single();
   if(error)return fail(error,'Не получилось: такое слово уже есть?');GUIDES.push(data);e.target.reset();renderGuides();toast('Призыв добавлен')};
 
-const secs=['s-home','s-feed','s-proc','s-tasks','s-reels','s-guides','s-profile','s-cal','s-tg'];
+const secs=['s-home','s-feed','s-proc','s-tasks','s-reels','s-guides','s-profile','s-strat','s-cal','s-tg'];
 function onScroll(){let cur=secs[0];secs.forEach(s=>{if($(s).getBoundingClientRect().top<window.innerHeight*.4)cur=s});
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));placeKnob('#dock','button.on')}
 window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{onScroll();applyRole()});
 
-function renderAll(full=true){renderProc();renderStats();renderWall();renderProfile();renderCal();renderFeed();renderGuides();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
+function renderAll(full=true){renderProc();renderStrat();renderStats();renderWall();renderProfile();renderCal();renderFeed();renderGuides();if(full){renderFilters();renderTasks();renderTG();renderPeople()}}
 
 // ── старт ──
 (async()=>{
