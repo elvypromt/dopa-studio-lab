@@ -335,6 +335,18 @@ body.studio .studio-only{display:revert}
 .note .acts button{font-size:12px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.6);color:var(--body);font-weight:600}
 .note .acts button:hover{background:#fff}
 .note textarea{min-height:90px;font-weight:500;font-size:14px}
+.nfl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.nfl img{width:100%;max-height:260px;object-fit:cover;border-radius:12px;cursor:zoom-in;display:block}
+.nfl .im{position:relative;flex:1 1 100%}
+.fch{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.7);color:var(--ink);cursor:pointer;max-width:100%}
+.fch span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.fch i{font-style:normal;opacity:.45;padding-left:2px}.fch i:hover{opacity:1}
+.nfl .im i{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:999px;width:22px;height:22px;display:grid;place-items:center;font-style:normal;font-size:13px;cursor:pointer}
+.gai{display:grid;gap:8px;background:rgba(255,255,255,.55);border-radius:14px;padding:12px}
+.gai .md{max-height:320px;overflow:auto;background:#fff;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5}
+.gai .md h1,.gai .md h2,.gai .md h3{margin:.6em 0 .3em;line-height:1.2;font-family:inherit}.gai .md h1{font-size:18px}.gai .md h2{font-size:15px}.gai .md h3{font-size:14px}
+.gai .md p,.gai .md ol,.gai .md ul{margin:.4em 0}
+.gai .row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .ai{border-radius:16px;padding:14px 16px;background:linear-gradient(135deg,rgba(201,133,150,.14),rgba(156,134,217,.16));box-shadow:inset 0 1px 0 #fff;display:grid;gap:10px;font-size:14px;color:var(--ink)}
 .ai .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .ai .field{padding:10px 14px;font-size:14px;flex:1;min-width:160px}
@@ -532,7 +544,8 @@ body.studio .gd .ge{display:grid}
     <div class="sh"><div><div class="eyebrow">Только студия · заметки, идеи, что проверить · сохраняется сразу</div><h2>Мастер<em>ская</em></h2></div>
       <div class="filters" id="labF"></div></div>
     <div class="lab-new glass"><textarea class="field" id="labIn" placeholder="Идея, заметка, что проверить… (⌘ + Enter — сохранить)"></textarea>
-      <div class="row"><div class="seg2" id="labTag"></div><span style="flex:1"></span><button class="btn lil sm" id="labGo">Сохранить</button></div></div>
+      <div class="nfl" id="labFiles"></div>
+      <div class="row"><div class="seg2" id="labTag"></div><span style="flex:1"></span><label class="btn sm upl" title="Картинка, PDF, любой файл. Можно вставить картинку прямо в текст (⌘V)">📎 Файл<input type="file" multiple id="labUp"></label><button class="btn lil sm" id="labGo">Сохранить</button></div></div>
     <div class="lab" id="lab"></div>
   </section>
 
@@ -1211,7 +1224,7 @@ function renderSheet(soft){
 }
 // ── Мастерская: живые заметки студии (таблица notes, клиент не видит по RLS) ──
 let NOTES=[],LABF='all',LABT='idea',NEDIT=null;const NT={idea:['💡','Идея'],check:['🔍','Проверить'],todo:['☐','Сделать'],note:['✎','Заметка']};
-async function loadNotes(){if(!ME||ME.role!=='studio'){NOTES=[];return}const {data,error}=await sb.from('notes').select('*').eq('client_id',CL.id).order('created_at',{ascending:false});if(!error)NOTES=data}
+async function loadNotes(){if(!ME||ME.role!=='studio'){NOTES=[];return}const {data,error}=await sb.from('notes').select('*').eq('client_id',CL.id).order('created_at',{ascending:false});if(!error){NOTES=data;await sign(NOTES.flatMap(n=>(n.files||[]).map(f=>f.path)))}}
 function renderLab(){
   if(!$('lab'))return;
   $('labF').innerHTML=[['all','Все'],...Object.entries(NT).map(([k,v])=>[k,v[0]+' '+v[1]]),['arch','Архив']].map(([k,t])=>`<button class="chip ${LABF===k?'on':''}" data-lf="${k}">${t}${k!=='arch'&&k!=='all'?` <span style="opacity:.5">${NOTES.filter(n=>!n.archived&&n.tag===k).length||''}</span>`:''}</button>`).join('');
@@ -1223,10 +1236,14 @@ function renderLab(){
   $('lab').innerHTML=list.map(n=>{const r=n.reel_id&&REELS.find(x=>x.id===n.reel_id);return `<div class="note ${n.pinned?'pin':''} ${n.done?'done':''}" data-n="${n.id}">
     <div class="mt"><b>${NT[n.tag]?NT[n.tag][0]+' '+NT[n.tag][1]:esc(n.tag)}</b><span>${new Date(n.created_at).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>${r?`<span>· ролик ${esc(r.code)}</span>`:''}${n.pinned?'<span>· 📌</span>':''}</div>
     ${NEDIT===n.id?`<textarea class="field" id="nEd">${esc(n.body)}</textarea><div class="acts"><button data-na="save">Сохранить</button><button data-na="cancel">Отмена</button></div>`
-      :`<div class="tx" data-na="edit">${esc(n.body)}</div>
-    <div class="acts"><button data-na="pin">${n.pinned?'Открепить':'📌 Закрепить'}</button>${n.tag==='todo'||n.tag==='check'?`<button data-na="done">${n.done?'Вернуть':'✓ Готово'}</button>`:''}
+      :`<div class="tx" data-na="edit">${esc(n.body)}</div>${filesHtml(n.files,n.id)}
+    <div class="acts"><label class="upl" style="display:inline-flex"><button tabindex="-1">📎 Файл</button><input type="file" multiple data-nf="${n.id}"></label><button data-na="pin">${n.pinned?'Открепить':'📌 Закрепить'}</button>${n.tag==='todo'||n.tag==='check'?`<button data-na="done">${n.done?'Вернуть':'✓ Готово'}</button>`:''}
       <button data-na="ai">✨ Развить с ИИ</button><button data-na="copy">Копировать</button><button data-na="arch">${n.archived?'Из архива':'В архив'}</button></div>`}</div>`}).join('')||`<div class="empty">${LABF==='arch'?'Архив пуст':'Пока пусто. Запишите первую идею сверху'}</div>`;
   $('lab').querySelectorAll('[data-na]').forEach(b=>b.onclick=()=>noteAct(b.closest('[data-n]').dataset.n,b.dataset.na,b));
+  $('lab').querySelectorAll('[data-nf]').forEach(inp=>inp.onchange=async()=>{const n=NOTES.find(x=>x.id===inp.dataset.nf);const fs=[...inp.files];if(!n||!fs.length)return;toast('Загружаю…');
+    const up=await upNoteFiles(fs);if(up.length){await noteUpd(n,{files:[...(n.files||[]),...up]});toast(up.length>1?'Файлы прикреплены':'Файл прикреплён')}});
+  bindFiles($('lab'),(nid,i)=>{const n=NOTES.find(x=>x.id===nid);if(!n)return;const f=n.files[i];if(!confirm('Убрать «'+f.name+'» из заметки? Сам файл останется в хранилище.'))return;noteUpd(n,{files:n.files.filter((_,k)=>k!==i)})});
+  renderLabFiles();
   const ed=$('nEd');if(ed){ed.focus();ed.onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))noteAct(NEDIT,'save');if(e.key==='Escape'){e.stopPropagation();NEDIT=null;renderLab()}}}
 }
 async function noteUpd(n,patch){const old={...n};Object.assign(n,patch);renderLab();const {error}=await sb.from('notes').update({...patch,updated_at:new Date().toISOString()}).eq('id',n.id);if(error){Object.assign(n,old);renderLab();fail(error)}}
@@ -1245,8 +1262,32 @@ async function noteAct(id,a,btn){
     if(msg){btn.disabled=false;btn.textContent='✨ Развить с ИИ';return toast(msg)}
     await addNote('✨ К идее «'+n.body.slice(0,60)+(n.body.length>60?'…':'')+'»\n\n'+data.text,'idea',n.reel_id);toast('Ответ ИИ сохранён отдельной заметкой')}
 }
-async function addNote(body,tag,reel_id){const {data,error}=await sb.from('notes').insert({client_id:CL.id,body,tag,reel_id:reel_id||null}).select().single();if(error)return fail(error);if(!NOTES.find(x=>x.id===data.id))NOTES.unshift(data);renderLab();return data}
-$('labGo').onclick=async()=>{const v=$('labIn').value.trim();if(!v)return $('labIn').focus();$('labGo').disabled=true;const d=await addNote(v,LABT);$('labGo').disabled=false;if(d){$('labIn').value='';if(LABF!=='all'&&LABF!==LABT){LABF='all';renderLab()}toast('Сохранено в Мастерской')}};
+async function addNote(body,tag,reel_id,files){const {data,error}=await sb.from('notes').insert({client_id:CL.id,body,tag,reel_id:reel_id||null,files:files||[]}).select().single();if(error)return fail(error);if(!NOTES.find(x=>x.id===data.id))NOTES.unshift(data);renderLab();return data}
+// файлы к заметкам: ${CL.id}/notes/…, в notes.files [{path,name,type}]; картинки превью, остальное чипами
+let LABP=[];
+const fIcon=t=>/pdf/.test(t)?'📄':/^video/.test(t)?'🎬':/^audio/.test(t)?'🎧':/sheet|excel|csv/.test(t)?'📊':/zip/.test(t)?'🗜':'📎';
+function filesHtml(fs,owner){fs=fs||[];if(!fs.length)return'';
+  return `<div class="nfl">${fs.map((f,i)=>/^image\//.test(f.type)&&url(f.path)?`<div class="im"><img src="${url(f.path)}" alt="${esc(f.name)}" data-fo="${owner}" data-fi="${i}"><i data-fx="${owner}" data-fi="${i}" title="Убрать">×</i></div>`
+    :`<span class="fch" data-fo="${owner}" data-fi="${i}">${fIcon(f.type||'')}<span>${esc(f.name)}</span><i data-fx="${owner}" data-fi="${i}" title="Убрать">×</i></span>`).join('')}</div>`}
+function bindFiles(box,onX){
+  box.querySelectorAll('[data-fo]').forEach(el=>el.onclick=e=>{if(e.target.dataset.fx)return;const o=el.dataset.fo,i=+el.dataset.fi;const n=NOTES.find(x=>x.id===o);const f=n&&n.files[i];if(f)openStored(f.path)});
+  box.querySelectorAll('[data-fx]').forEach(el=>el.onclick=e=>{e.stopPropagation();onX(el.dataset.fx,+el.dataset.fi)})}
+async function openStored(p){const w=window.open('','_blank');const {data,error}=await sb.storage.from(BUCKET).createSignedUrl(p,3600);if(error){w&&w.close();return fail(error)}if(w)w.location=data.signedUrl;else location.href=data.signedUrl}
+async function upNoteFiles(fs){const out=[];
+  for(const f of fs){if(f.size>50e6){toast('«'+f.name+'» больше 50 МБ, пропускаю');continue}
+    const nm=f.name||('paste_'+Date.now()+'.png');const pth=`${CL.id}/notes/${Date.now().toString(36)}_${nm.normalize('NFKD').replace(/[^\w.\-]+/g,'_')}`;
+    const {error}=await sb.storage.from(BUCKET).upload(pth,f,{contentType:f.type||undefined});if(error){fail(error,'Файл не загрузился');continue}
+    out.push({path:pth,name:nm,type:f.type||''})}
+  await sign(out.map(x=>x.path));return out}
+function renderLabFiles(){const b=$('labFiles');if(!b)return;
+  b.innerHTML=LABP.map((f,i)=>`<span class="fch">${fIcon(f.type||'')}<span>${esc(f.name||'картинка')}</span><i data-lpx="${i}" title="Убрать">×</i></span>`).join('');
+  b.querySelectorAll('[data-lpx]').forEach(x=>x.onclick=()=>{LABP.splice(+x.dataset.lpx,1);renderLabFiles()})}
+$('labUp').onchange=()=>{LABP.push(...$('labUp').files);$('labUp').value='';renderLabFiles()};
+$('labIn').addEventListener('paste',e=>{const fs=[...(e.clipboardData&&e.clipboardData.files||[])];if(!fs.length)return;e.preventDefault();
+  LABP.push(...fs.map(f=>f.name&&f.name!=='image.png'?f:new File([f],'картинка_'+new Date().toTimeString().slice(0,8).replace(/:/g,'-')+'.'+(f.type.split('/')[1]||'png'),{type:f.type})));renderLabFiles();toast('Картинка прикрепится при сохранении')});
+$('labGo').onclick=async()=>{let v=$('labIn').value.trim();if(!v&&!LABP.length)return $('labIn').focus();$('labGo').disabled=true;
+  const files=LABP.length?(toast('Загружаю файлы…'),await upNoteFiles(LABP)):[];if(!v)v=files.map(f=>f.name).join(', ')||'Файл';
+  const d=await addNote(v,LABT,null,files);$('labGo').disabled=false;if(d){$('labIn').value='';LABP=[];renderLabFiles();if(LABF!=='all'&&LABF!==LABT){LABF='all';renderLab()}toast('Сохранено в Мастерской')}};
 $('labIn').onkeydown=e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))$('labGo').click()};
 // ── ИИ в карточке (функция ai, только студия). В базу сам ничего не пишет: «Вставить» кладёт текст в поле, сохраняете вы ──
 const AIS={};const aiOf=r=>AIS[r.id]||(AIS[r.id]={mode:null,opts:[],chat:[],busy:false,err:''});
@@ -1418,7 +1459,9 @@ const GST={draft:'Черновик',ready:'Готов',live:'Работает в
 const guideOf=kw=>kw&&GUIDES.find(g=>g.keyword.toUpperCase()===String(kw).trim().toUpperCase());
 const reelsOf=kw=>REELS.filter(r=>(r.cta||'').trim().toUpperCase()===kw.toUpperCase());
 async function openGuide(id){const g=GUIDES.find(x=>x.id===id);if(!g)return;
-  if(g.path){const {data,error}=await sb.storage.from(BUCKET).createSignedUrl(g.path,3600);if(error)return fail(error);window.open(data.signedUrl,'_blank','noopener')}
+  if(g.path&&/\.html?$/i.test(g.path)){const w=window.open('','_blank');const {data,error}=await sb.storage.from(BUCKET).download(g.path);if(error){w&&w.close();return fail(error)}
+    const u=URL.createObjectURL(new Blob([await data.text()],{type:'text/html'}));if(w)w.location=u;else location.href=u}
+  else if(g.path){const {data,error}=await sb.storage.from(BUCKET).createSignedUrl(g.path,3600);if(error)return fail(error);window.open(data.signedUrl,'_blank','noopener')}
   else if(g.url)window.open(g.url,'_blank','noopener');else toast('Файл ещё не прикреплён')}
 function guideLinks(g){return `${g.path?`<button class="btn sm" data-og="${g.id}">Открыть файл</button>`:''}${g.url&&!g.path?`<button class="btn sm" data-og="${g.id}">Открыть ссылку</button>`:''}${g.url&&g.path?`<a class="btn sm" href="${esc(g.url)}" target="_blank" rel="noopener">Ссылка</a>`:''}`}
 function ctaBlock(r,st){const g=guideOf(r.cta);
@@ -1453,7 +1496,9 @@ function renderGuides(){
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <select class="field" data-f="status" style="flex:0 1 200px">${Object.keys(GST).map(k=>`<option value="${k}" ${k===g.status?'selected':''}>${GST[k]}</option>`).join('')}</select>
           <label class="btn sm upl">${g.path?'Заменить файл':'Прикрепить файл'}<input type="file" data-up="${g.id}"></label>
-          <button class="btn lil sm" data-gs="${g.id}">Сохранить</button></div></div>`:''}
+          <button class="btn lil sm" data-gs="${g.id}">Сохранить</button></div>
+        <button class="btn sm" data-gai="${g.id}" ${GAI[g.id]&&GAI[g.id].busy?'disabled':''}>${GAI[g.id]&&GAI[g.id].busy?'ИИ пишет гайд… (~30 с)':'✨ ИИ: гайд + ответ в директ'}</button>
+        ${gaiHtml(g)}</div>`:''}
     </div>`}).join('')||'<div class="empty">Призывов пока нет</div>';
   const box=$('guides');
   box.querySelectorAll('[data-og]').forEach(b=>b.onclick=()=>openGuide(b.dataset.og));
@@ -1461,11 +1506,63 @@ function renderGuides(){
   box.querySelectorAll('[data-gs]').forEach(b=>b.onclick=async()=>{const card=$('g-'+b.dataset.gs);const upd={};
     card.querySelectorAll('[data-f]').forEach(f=>upd[f.dataset.f]=f.value.trim()||null);upd.title=upd.title||'Без названия';upd.status=upd.status||'draft';
     const {error}=await sb.from('guides').update(upd).eq('id',b.dataset.gs);if(error)return fail(error);Object.assign(GUIDES.find(x=>x.id===b.dataset.gs),upd);renderGuides();toast('Гайд сохранён')});
+  box.querySelectorAll('[data-gai]').forEach(b=>b.onclick=()=>guideAI(b.dataset.gai));
+  box.querySelectorAll('[data-gaa]').forEach(b=>b.onclick=()=>guideAIAct(b.dataset.gid,b.dataset.gaa,b));
   box.querySelectorAll('[data-up]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(!f)return;const g=GUIDES.find(x=>x.id===inp.dataset.up);
     const safe=f.name.replace(/[^\w.\-]+/g,'_');const pth=`${CL.id}/guides/${g.keyword}_${Date.now()}_${safe}`;toast('Загружаю…');
     const {error}=await sb.storage.from(BUCKET).upload(pth,f,{upsert:true,contentType:f.type||undefined});if(error)return fail(error);
     const {error:e2}=await sb.from('guides').update({path:pth,file_name:f.name}).eq('id',g.id);if(e2)return fail(e2);g.path=pth;g.file_name=f.name;renderGuides();toast('Файл прикреплён')});
 }
+// Гайд от ИИ: по ключевому слову пишет текст ответа в директ и сам гайд. Ничего не сохраняет без кнопки
+const GAI={};
+function mdHtml(s){const inl=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/(^|[\s(])\*(?!\s)(.+?)\*(?=[\s).,!?:]|$)/g,'$1<i>$2</i>');
+  let h='',L=null;const close=()=>{if(L){h+=`</${L}>`;L=null}};
+  for(const raw of String(s||'').split('\n')){const l=raw.trimEnd();let m;
+    if(!l.trim()){close();continue}
+    if(m=l.match(/^(#{1,3})\s+(.*)/)){close();h+=`<h${m[1].length}>${inl(m[2])}</h${m[1].length}>`}
+    else if(m=l.match(/^\s*\d+[.)]\s+(.*)/)){if(L!=='ol'){close();h+='<ol>';L='ol'}h+=`<li>${inl(m[1])}</li>`}
+    else if(m=l.match(/^\s*[-*•]\s+(.*)/)){if(L!=='ul'){close();h+='<ul>';L='ul'}h+=`<li>${inl(m[1])}</li>`}
+    else if(/^\s*>\s?/.test(l)){close();h+=`<blockquote>${inl(l.replace(/^\s*>\s?/,''))}</blockquote>`}
+    else if(/^-{3,}$/.test(l.trim())){close();h+='<hr>'}
+    else{close();h+=`<p>${inl(l)}</p>`}}
+  close();return h}
+function gaiHtml(g){const a=GAI[g.id];if(!a)return'';
+  if(a.err)return `<div class="err">${esc(a.err)}</div>`;if(a.busy||!a.body&&!a.reply)return'';
+  return `<div class="gai">${a.reply?`<div class="lbl" style="margin:0">Ответ в директ (вместо [LINK] бот подставит ссылку на гайд)</div><div class="opt" style="background:#fff;border-radius:12px;padding:10px 12px;white-space:pre-wrap">${esc(a.reply)}</div>
+    <div class="row"><button class="btn sm" data-gid="${g.id}" data-gaa="cpr">Скопировать</button><button class="btn sm lil" data-gid="${g.id}" data-gaa="ins">Вставить в поле ответа</button></div>`:''}
+    <div class="lbl" style="margin:0">Гайд</div><div class="md">${mdHtml(a.body)}</div>
+    <div class="row"><button class="btn sm" data-gid="${g.id}" data-gaa="cpb">Скопировать текст</button><button class="btn sm" data-gid="${g.id}" data-gaa="prev">Открыть как страницу</button><button class="btn sm lil" data-gid="${g.id}" data-gaa="save">Сохранить гайд файлом</button></div></div>`}
+async function guideAI(id){const g=GUIDES.find(x=>x.id===id);if(!g)return;const a=GAI[id]={busy:true};renderGuides();
+  const card=$('g-'+id),cur=k=>{const f=card&&card.querySelector(`[data-f="${k}"]`);return f?f.value.trim():(g[k]||'')};
+  const rs=reelsOf(g.keyword);
+  const brief=`Keyword people comment: ${g.keyword}\nGuide title: ${cur('title')||g.title}\nWhat it is about (studio note, may be Russian): ${cur('note')||'—'}\nReels that end with this call: ${rs.map(r=>r.code+' «'+r.title+'»'+(r.idea?' — '+r.idea:'')).join('; ')||'—'}`;
+  const {data,error}=await sb.functions.invoke('ai',{body:{mode:'guide',client_id:CL.id,reel_id:rs[0]?rs[0].id:null,note:brief}});
+  let msg=data&&data.error;if(error&&!msg){try{msg=(await error.context.json()).error}catch(e){msg=String(error.message||error)}}
+  Object.assign(a,{busy:false,err:msg||'',reply:msg?'':data.reply,body:msg?'':data.body,kw:g.keyword});renderGuides()}
+function guideDoc(g,body,logo){const t=(String(body).match(/^#\s+(.+)/m)||[,g.title])[1];
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t)} · Publora</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>:root{--g:#30A567;--l:#2FD27A}*{box-sizing:border-box}body{margin:0;background:#070708;color:#e9e9ec;font:16px/1.65 Inter,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:48px 22px 80px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}.top svg,.top img{height:28px;width:auto}
+.kw{font:600 12px/1 Inter;letter-spacing:.12em;text-transform:uppercase;color:#070708;background:var(--l);padding:7px 11px;border-radius:999px}
+h1{font:800 clamp(32px,7vw,52px)/1.05 'Bricolage Grotesque',sans-serif;margin:0 0 18px;letter-spacing:-.02em}h2{font:700 24px/1.2 'Bricolage Grotesque',sans-serif;margin:40px 0 12px}h3{font:700 19px/1.3 'Bricolage Grotesque',sans-serif;margin:28px 0 8px}
+p{margin:12px 0;color:#c9c9d0}b{color:#fff}code{font:14px/1.4 ui-monospace,Menlo,monospace;background:#16171a;border:1px solid #26272c;border-radius:6px;padding:2px 6px;color:var(--l)}
+ol,ul{padding-left:22px}li{margin:10px 0;color:#c9c9d0}ol li::marker{color:var(--l);font-weight:700}blockquote{margin:16px 0;padding:14px 18px;border-left:3px solid var(--g);background:#101113;border-radius:0 12px 12px 0;color:#e9e9ec}
+hr{border:0;border-top:1px solid #222;margin:32px 0}.cta{margin-top:48px;padding:24px;border-radius:20px;background:linear-gradient(135deg,#0f2a1b,#0b0c0d);border:1px solid #1c3b29;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.cta a{background:var(--l);color:#070708;font-weight:700;text-decoration:none;padding:12px 18px;border-radius:999px}</style></head>
+<body><main><div class="top">${logo||'<b>Publora</b>'}<span class="kw">${esc(g.keyword)}</span></div>${mdHtml(body)}
+<div class="cta"><b>Posting by hand is over.</b><a href="https://publora.com">Start free at publora.com</a></div></main></body></html>`}
+let LOGO_SVG=null;async function logoSvg(){if(LOGO_SVG===null){try{LOGO_SVG=await (await fetch('brand/publora_logo_white.svg')).text()}catch(e){LOGO_SVG=''}}return LOGO_SVG}
+async function guideAIAct(id,act,btn){const g=GUIDES.find(x=>x.id===id),a=GAI[id];if(!g||!a)return;
+  if(act==='cpr'){navigator.clipboard&&navigator.clipboard.writeText(a.reply);toast('Скопировано')}
+  else if(act==='cpb'){navigator.clipboard&&navigator.clipboard.writeText(a.body);toast('Скопировано')}
+  else if(act==='ins'){const f=$('g-'+id).querySelector('[data-f="reply"]');f.value=a.reply;f.focus();toast('Вставлено. Проверьте и нажмите «Сохранить»')}
+  else if(act==='prev'){const u=URL.createObjectURL(new Blob([guideDoc(g,a.body,await logoSvg())],{type:'text/html'}));window.open(u,'_blank')}
+  else if(act==='save'){if(g.path&&!confirm('У призыва уже есть файл «'+(g.file_name||'гайд')+'». Заменить ссылку на новый? Старый файл останется в хранилище.'))return;
+    btn.disabled=true;const nm=`${g.keyword}_guide.html`,pth=`${CL.id}/guides/${g.keyword}_${Date.now()}_${nm}`;
+    const {error}=await sb.storage.from(BUCKET).upload(pth,new Blob([guideDoc(g,a.body,await logoSvg())],{type:'text/html'}),{contentType:'text/html;charset=utf-8'});if(error){btn.disabled=false;return fail(error)}
+    const {error:e2}=await sb.from('guides').update({path:pth,file_name:nm}).eq('id',id);if(e2){btn.disabled=false;return fail(e2)}
+    g.path=pth;g.file_name=nm;renderGuides();toast('Гайд сохранён файлом и прикреплён к '+g.keyword)}}
 function plural(n,a,b,c){const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c}
 async function openAt(reelId,t){await openSheet(reelId);const seek=()=>{try{vid.currentTime=t;vid.play().catch(()=>{})}catch(e){}};if(vid.readyState>=1)seek();else vid.addEventListener('loadedmetadata',seek,{once:true})}
 function renderFeed(){

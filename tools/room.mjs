@@ -5,7 +5,7 @@
 //   node room.mjs pub <код> [ГГГГ-ММ-ДД] [--late]   ролик вышел (по умолчанию сегодня), встаёт на этот день
 //   node room.mjs sync                       сверка с Publora: вышедшее там → «вышел» в комнате
 //   node room.mjs today                      что по плану сегодня и что не отмечено за прошлые дни
-//   node room.mjs idea "текст" [--tag idea|check|todo|note] [--pin] [--reel код]   заметка в Мастерскую (видит только студия)
+//   node room.mjs idea "текст" [--tag idea|check|todo|note] [--pin] [--reel код] [--file путь]   заметка в Мастерскую (видит только студия)
 //   node room.mjs ideas                      что лежит в Мастерской
 // Этапы: idea script board anim voice edit review ready publora note.
 // --show = клиент тоже видит запись (по умолчанию только студия). Версии клиент видит всегда.
@@ -101,7 +101,8 @@ if (cmd === 'step') {
   const [body] = rest; if (!body) throw new Error('нужен текст');
   const tag = tagArg || 'idea'; if (!['idea', 'check', 'todo', 'note'].includes(tag)) throw new Error('tag: idea check todo note');
   const reel = reelArg ? await reelBy(reelArg) : null;
-  const [n] = await rest_('notes', { method: 'POST', body: JSON.stringify({ client_id: CID, body, tag, pinned: pinArg, reel_id: reel?.id || null }) });
+  const files = fileArg ? [{ path: await put(fileArg, `notes/${stamp()}_${safe(fileArg)}`), name: path.basename(fileArg), type: TYPES[path.extname(fileArg).toLowerCase()] || '' }] : [];
+  const [n] = await rest_('notes', { method: 'POST', body: JSON.stringify({ client_id: CID, body, tag, pinned: pinArg, reel_id: reel?.id || null, files }) });
   console.log(`ok · Мастерская · ${tag}${pinArg ? ' · 📌' : ''} · ${n.id}`);
 } else if (cmd === 'ideas') {
   const xs = await rest_(`notes?client_id=eq.${CID}&archived=eq.false&order=pinned.desc,created_at.desc&select=created_at,tag,pinned,done,body`);

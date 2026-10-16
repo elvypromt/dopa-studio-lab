@@ -27,6 +27,10 @@ const TASK: Record<string, string> = {
   caption: `Write 3 different Instagram captions in English for this reel (each 300–700 characters: hook line, 2–4 short lines, soft CTA like "Link in bio" or "Try it free"). No hashtags. Return JSON only: {"options":["...","...","..."]}`,
   hook: `Write 6 different hook first-lines in English for this reel (max 70 characters each; curiosity, pain, or bold claim within the facts). Return JSON only: {"options":["..."]}`,
   tags: `Write 3 hashtag sets for this reel, each 5–8 hashtags in one line, mix of broad and niche, English, include #publora. Return JSON only: {"options":["#a #b ...","...","..."]}`,
+  guide: `The reel ends with "comment KEYWORD". Everyone who comments gets an automatic Instagram DM with a free guide. Using the guide brief from the studio below, write:
+1) "reply": the DM text (English, 250–450 characters, friendly, thanks them, 1 line on what's inside, then the placeholder [LINK] on its own line, then one soft line about trying Publora free in the browser). No hashtags.
+2) "body": the guide itself in Markdown (English, 350–700 words): title, 1-line promise, numbered practical steps with concrete examples (e.g. exact prompts to say to your AI), a short "Common mistakes" list, and a final line "Start free at publora.com". Only facts from the brand notes; no invented numbers, no time promises anywhere (no "in 2 minutes", "in seconds", "in a minute"), no headline about speed.
+Return JSON only: {"reply":"...","body":"..."}`,
   cta: `Write 5 call-to-action lines in English for the end of this caption (no comment-to-DM bait). Return JSON only: {"options":["..."]}`,
 };
 
@@ -63,12 +67,13 @@ Deno.serve(async (req) => {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: MODEL, max_tokens: 1500, system, messages }),
+    body: JSON.stringify({ model: MODEL, max_tokens: mode === "guide" ? 3500 : 1500, system, messages }),
   });
   const b = await res.json();
   if (!res.ok) return json({ error: "ИИ: " + (b?.error?.message || res.status) }, 502);
   const text = (b.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("").trim();
   if (mode === "chat") return json({ text });
+  if (mode === "guide") { try { const m = text.match(/\{[\s\S]*\}/); const o = JSON.parse(m ? m[0] : text); return json({ reply: o.reply || "", body: o.body || "" }); } catch { return json({ reply: "", body: text }); } }
   try { const m = text.match(/\{[\s\S]*\}/); return json({ options: JSON.parse(m ? m[0] : text).options || [] }); }
   catch { return json({ options: [text] }); }
 });
