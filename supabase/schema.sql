@@ -283,3 +283,20 @@ alter table public.guides enable row level security;
 create policy guides_read  on public.guides for select to authenticated using (is_member(client_id));
 create policy guides_write on public.guides for all to authenticated using (is_studio(client_id)) with check (is_studio(client_id));
 alter publication supabase_realtime add table public.guides;
+
+-- ── «Сомневаюсь»: клиент или студия откладывают ролик, повторное нажатие → обратно на проверку (17.10) ──
+create or replace function public.request_hold(r uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare cid uuid; st text;
+begin
+  select client_id, status into cid, st from reels where id = r;
+  if cid is null or not is_member(cid) then raise exception 'нет доступа'; end if;
+  if st = 'pub' then return st; end if;
+  if st = 'hold' then update reels set status = 'rev' where id = r; return 'rev'; end if;
+  update reels set status = 'hold' where id = r; return 'hold';
+end $$;
+revoke execute on function public.request_hold from public, anon;
+grant execute on function public.request_hold to authenticated;
+
+-- избранное студии (17.10)
+alter table public.reels add column if not exists fav boolean not null default false;
