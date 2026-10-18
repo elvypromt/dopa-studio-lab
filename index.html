@@ -360,6 +360,7 @@ body.studio .studio-only{display:revert}
 .ai .busy{opacity:.6}
 .cvai{display:flex;gap:8px;flex-wrap:wrap}.cvai .field{flex:1 1 260px}.cvopts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cvopt{display:grid;gap:6px;align-content:start}.cvopt canvas{width:100%;height:auto;aspect-ratio:9/16;border-radius:12px;background:#070708}.cvopt .why{font-size:12.5px;line-height:1.35;color:var(--body)}
 .cvwrap{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:start}
+.cvbgs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.cvbgs img{width:54px;aspect-ratio:9/16;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid transparent}.cvbgs img.on{border-color:#2FD27A}.cvbgs label{font-size:12.5px;padding:6px 10px;border-radius:10px;border:1px dashed currentColor;cursor:pointer;opacity:.75}
 .cvwrap canvas{width:150px;height:auto;aspect-ratio:9/16;border-radius:12px;background:#070708}
 @media(max-width:520px){.cvwrap{grid-template-columns:1fr}.cvwrap canvas{width:60%}}
 .edit{display:grid;gap:8px;margin-top:8px}
@@ -1466,6 +1467,8 @@ function coverBlock(r){const c=covState(r);
     <textarea class="field" id="cvL" rows="2" placeholder="Строки «→» мелким шрифтом, каждая с новой строки">${esc(c.lines||'')}</textarea>
     <input class="field" id="cvS" placeholder="Зелёная плашка (редко), напр. Stop it." value="${esc(c.s||'')}">
     <div class="sub">Кадр берётся с текущей секунды видео: поставьте на паузу где нравится.</div>
+    <div class="sub">Фоны для обложки (Higgsfield и свои): нажмите, чтобы поставить под текст.</div>
+    <div class="cvbgs">${CVBG[r.id]?CVBG[r.id].map((p,i)=>`<img src="${url(p)}" data-cvbg="${i}" class="${c.bg===p?'on':''}" alt="">`).join(''):'<span class="sub">загружаю…</span>'}<label>+ свой фон<input type="file" accept="image/*" id="cvBgUp" hidden></label></div>
     <div class="row" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" id="cvFrame">Взять кадр</button><button class="btn sm" id="cvNo">Без кадра</button><button class="btn sm lil" id="cvSave">Поставить обложкой</button></div>
   </div></div></div>`}
 async function grabFrame(){
@@ -1500,7 +1503,9 @@ async function drawCoverTo(cv,c,frame){
   const L0=c.layout||'low';g.textAlign='left';g.letterSpacing='0px';
   g.fillStyle=PAL.bg;g.fillRect(0,0,1080,1920);
   if(frame){g.drawImage(frame,0,0);const gr=g.createLinearGradient(0,0,0,1920);
-    if(L0==='top'){gr.addColorStop(0,O(.97));gr.addColorStop(.38,O(.9));gr.addColorStop(.6,O(.45));gr.addColorStop(.85,O(.75));gr.addColorStop(1,O(.97))}
+    // светлая: фон-картинка уже чистая под текстом, подложка лёгкая, чтобы не гасить зелёный
+    if(PAL.hl){const st=L0==='top'?[[0,.75],[.3,.6],[.5,0],[.88,0],[1,.55]]:L0==='big'?[[0,.7],[1,.75]]:[[0,0],[.42,0],[.6,.55],[.8,.7],[1,.8]];st.forEach(([o,a])=>gr.addColorStop(o,O(a)))}
+    else if(L0==='top'){gr.addColorStop(0,O(.97));gr.addColorStop(.38,O(.9));gr.addColorStop(.6,O(.45));gr.addColorStop(.85,O(.75));gr.addColorStop(1,O(.97))}
     else if(L0==='big'){gr.addColorStop(0,O(.88));gr.addColorStop(1,O(.92))}
     else{gr.addColorStop(0,O(.35));gr.addColorStop(.45,O(.55));gr.addColorStop(.62,O(.92));gr.addColorStop(1,O(.97))}
     g.fillStyle=gr;g.fillRect(0,0,1080,1920)}
@@ -1544,6 +1549,12 @@ async function coverAI(r){const c=covState(r);if(c.busy)return;c.wish=$('cvWish'
   if(msg)c.err=msg;else c.opts=(data.options||[]).filter(o=>o&&typeof o==='object');
   if(!msg&&!c.opts.length)c.err='ИИ ответил не по формату, попробуйте ещё раз';
   if(CUR&&CUR.id===r.id)rerenderCover(r)}
+// фоны обложки: storage <cid>/bg/<код ролика>/ (кладёт студия: Higgsfield из чата или «+ свой фон»)
+const CVBG={};
+async function loadBgs(r){const pre=`${CL.id}/bg/${r.code}`;const {data}=await sb.storage.from(BUCKET).list(pre,{limit:60,sortBy:{column:'created_at',order:'desc'}});
+  const ps=(data||[]).filter(f=>/\.(jpe?g|png|webp)$/i.test(f.name)).map(f=>pre+'/'+f.name);await sign(ps);CVBG[r.id]=ps;if(CUR&&CUR.id===r.id)rerenderCover(r)}
+function bgFrame(src){return new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{const c=document.createElement('canvas');c.width=1080;c.height=1920;const s=Math.max(1080/im.width,1920/im.height);
+  c.getContext('2d').drawImage(im,(1080-im.width*s)/2,(1920-im.height*s)/2,im.width*s,im.height*s);res(c)};im.onerror=()=>res(null);im.src=src})}
 function rerenderCover(r){const box=$('cvBox');if(!box)return;box.innerHTML=coverBlock(r);bindCover(r)}
 function takeOpt(c,o){Object.assign(c,{layout:o.layout||'low',tag:o.tag||'',h:o.h||'',accent:o.accent||'',s:o.slab||'',big:o.big||'',lines:(o.lines||[]).join('\n'),useFrame:!!o.frame,theme:o.theme==='light'?'light':'dark'})}
 function bindCover(r){
@@ -1554,8 +1565,12 @@ function bindCover(r){
   document.querySelectorAll('[data-cvth]').forEach(b=>b.onclick=()=>{c.theme=b.dataset.cvth;rerenderCover(r)});
   document.querySelectorAll('[data-cvo]').forEach(cv=>{const o=c.opts[+cv.dataset.cvo];const t={};takeOpt(t,o);drawCoverTo(cv,t,t.useFrame?c.frame:null)});
   document.querySelectorAll('[data-cvtake]').forEach(b=>b.onclick=()=>{takeOpt(c,c.opts[+b.dataset.cvtake]);rerenderCover(r);toast('Вариант в редакторе: можно поправить и поставить обложкой')});
-  $('cvFrame').onclick=async()=>{const b=$('cvFrame');b.disabled=true;const f=await grabFrame();b.disabled=false;if(!f)return toast('Кадр не взялся: сначала загрузите видео');c.frame=f;c.useFrame=true;drawCover(r)};
+  $('cvFrame').onclick=async()=>{const b=$('cvFrame');b.disabled=true;const f=await grabFrame();b.disabled=false;if(!f)return toast('Кадр не взялся: сначала загрузите видео');c.frame=f;c.useFrame=true;c.bg=null;drawCover(r)};
   $('cvNo').onclick=()=>{c.useFrame=false;drawCover(r)};
+  if(!CVBG[r.id])loadBgs(r);
+  document.querySelectorAll('[data-cvbg]').forEach(im=>im.onclick=async()=>{const p=CVBG[r.id][+im.dataset.cvbg];const f=await bgFrame(url(p));if(!f)return toast('Фон не загрузился');c.frame=f;c.useFrame=true;c.bg=p;rerenderCover(r)});
+  $('cvBgUp').onchange=async()=>{const f=$('cvBgUp').files[0];if(!f)return;const ext=(f.name.split('.').pop()||'jpg').toLowerCase();toast('Загружаю фон…');
+    const {error}=await sb.storage.from(BUCKET).upload(`${CL.id}/bg/${r.code}/own_${Date.now()}.${ext}`,f,{contentType:f.type||undefined});if(error)return toast('Фон не загрузился');await loadBgs(r);toast('Фон добавлен')};
   $('cvSave').onclick=async()=>{const cv=$('cv');let blob;try{blob=await new Promise(res=>cv.toBlob(res,'image/jpeg',.9))}catch(e){return toast('Не получилось сохранить кадр')}
     if(!confirm('Поставить эту картинку обложкой ролика '+r.code+'?'))return;
     await uploadPoster(r,new File([blob],'cover.jpg',{type:'image/jpeg'}))};
