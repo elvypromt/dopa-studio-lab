@@ -326,6 +326,11 @@ body.studio .gd .ge{display:grid}
     <div class="studio-only" style="margin-top:16px"><button class="btn sm" id="newReel">+ Новый ролик</button></div>
   </section>
 
+  <section id="s-fast">
+    <div class="sh"><div><div class="eyebrow">Новые короткие · хук с первой секунды · петля</div><h2>Скоростные <em>ролики</em></h2></div></div>
+    <div class="wall" id="wallFast"></div>
+  </section>
+
   <section id="s-guides">
     <div class="sh"><div><div class="eyebrow">Слово в комментарии → бот присылает в директ</div><h2>Призывы <em>и гайды</em></h2></div></div>
     <div class="guides" id="guides"></div>
@@ -432,6 +437,7 @@ body.studio .gd .ge{display:grid}
   <button data-s="s-proc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 12h16M4 18h7"/><circle cx="18" cy="6" r="2"/><circle cx="15" cy="18" r="2"/></svg><span>Процесс</span></button>
   <button data-s="s-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Решения</span></button>
   <button data-s="s-reels"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/></svg><span>Ролики</span></button>
+  <button data-s="s-fast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span>Скоростные</span></button>
   <button data-s="s-profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.5"/><circle cx="17.3" cy="6.7" r=".8" fill="currentColor"/></svg><span>Профиль</span></button>
   <button data-s="s-guides"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Гайды</span></button>
   <button data-s="s-rep" class="studio-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v5"/></svg><span>Ответы</span></button>
@@ -808,6 +814,7 @@ function renderWall(){
   $('wall').innerHTML=list.map(r=>{const s=ST[r.status];const p=url(r.poster_path);const n=openCm(r);
     let head='';if(!keys){const k=grpKey(r);if(k!==last){last=k;head=grpHead(k,list.filter(x=>grpKey(x)===k).length)}}
     return head+tileHtml(r,s,p,n)}).join('')||'<div class="empty">Здесь пока пусто</div>';
+  $('wallFast').innerHTML=REELS.filter(r=>r.fast).sort((a,b)=>(+b.code||0)-(+a.code||0)).map(r=>tileHtml(r,ST[r.status],url(r.poster_path),openCm(r))).join('')||'<div class="empty">Пока нет скоростных роликов</div>';
   document.querySelectorAll('.tile').forEach(t=>{t.onclick=()=>openSheet(t.dataset.id);t.onpointermove=e=>{const b=t.getBoundingClientRect();t.style.setProperty('--ry',((e.clientX-b.left)/b.width-.5)*8+'deg')}});
   document.querySelectorAll('.tile .fav').forEach(b=>b.onclick=async e=>{e.stopPropagation();const r=REELS.find(x=>x.id===b.dataset.fav);if(!r)return;const v=!r.fav;r.fav=v;renderFilters();renderWall();
     const {error}=await sb.from('reels').update({fav:v}).eq('id',r.id);if(error){r.fav=!v;renderFilters();renderWall();fail(error)}else toast(v?'Ролик '+r.code+' в избранном':'Убран из избранного')});
@@ -825,6 +832,7 @@ async function patchReel(r,patch,msg){const {error}=await sb.from('reels').updat
 document.addEventListener('change',e=>{if(!studio()||!CUR)return;
   if(e.target.id==='eHl')patchReel(CUR,{hl:e.target.value||null},'Хайлайт сохранён');
   if(e.target.id==='eTh')patchReel(CUR,{theme:e.target.value||null},'Тема сохранена')});
+document.addEventListener('click',e=>{if(e.target.id!=='eFast'||!studio()||!CUR)return;patchReel(CUR,{fast:!CUR.fast},CUR.fast?'Убран из скоростных':'Ролик во вкладке «Скоростные»')});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ecta]');if(!b||!studio()||!CUR)return;
   const k=b.dataset.ecta;patchReel(CUR,{end_cta:CUR.end_cta===k?null:k},k==='none'?'Помечено: нет призыва':'Призыв отмечен')});
 
@@ -978,6 +986,7 @@ function renderSheet(soft){
     ${st?`<div class="row" style="display:flex;gap:8px;flex-wrap:wrap"><select class="field" id="eHl" style="flex:1;min-width:140px"><option value="">— без хайлайта —</option>${HL_ORDER.map(h=>`<option ${h===r.hl?'selected':''}>${esc(h)}</option>`).join('')}</select>
       <select class="field" id="eTh" style="flex:1;min-width:140px"><option value="">— без темы —</option>${Object.entries(CL.themes||{}).map(([k,t])=>`<option value="${k}" ${k===r.theme?'selected':''}>${esc(t)}</option>`).join('')}</select></div>`
       :`<div class="tags">${r.hl?`<span class="tag">${esc(r.hl)}</span>`:''}${r.theme?`<span class="tag">${esc((CL.themes||{})[r.theme]||r.theme)}</span>`:''}</div>`}
+    ${st?`<div class="row" style="margin:8px 0 4px"><button class="chip ${r.fast?'on':''}" id="eFast">⚡ Скоростной</button></div>`:''}
     <div class="lbl">Призыв в конце ролика ${r.cta?`<button class="btn sm" id="toGuide">Все гайды</button>`:''}</div>
     <div class="ctab" style="margin-bottom:10px${r.end_cta==='none'?';background:#FBE3E6;color:#B8323F;font-weight:700':''}">
       <div class="ln">${r.end_cta?esc(CTA_T[r.end_cta]):'Не проверено'}${r.cta_note?` <span class="arr">· ${esc(r.cta_note)}</span>`:''}${r.voiced===false?' <span class="arr">· без голоса</span>':r.voiced?' <span class="arr">· озвучен</span>':''}</div>
@@ -1464,7 +1473,7 @@ $('gForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target)
   const {data,error}=await sb.from('guides').insert({client_id:CL.id,keyword:kw,title:String(fd.get('title')).trim(),sort:GUIDES.length+1}).select().single();
   if(error)return fail(error,'Не получилось: такое слово уже есть?');GUIDES.push(data);e.target.reset();renderGuides();toast('Призыв добавлен')};
 
-const secs=['s-home','s-lab','s-feed','s-proc','s-tasks','s-reels','s-guides','s-rep','s-profile','s-strat','s-cal','s-tg'];
+const secs=['s-home','s-lab','s-feed','s-proc','s-tasks','s-reels','s-fast','s-guides','s-rep','s-profile','s-strat','s-cal','s-tg'];
 function onScroll(){let cur=secs[0];secs.forEach(s=>{if($(s).offsetParent&&$(s).getBoundingClientRect().top<window.innerHeight*.4)cur=s});
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));placeKnob('#dock','button.on')}
 window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{onScroll();applyRole()});
