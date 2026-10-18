@@ -1397,7 +1397,7 @@ async function aiRun(r,body){
   if(CUR&&CUR.id===r.id)renderAI(r)}
 
 // ── обложка из кадра ролика: тёмная, белый заголовок, зелёная плашка, официальный логотип ──
-const COV={};let LOGO_W=null;
+const COV={};let LOGO_W=null,LOGO_D=null;
 const CVL={low:'Текст внизу',top:'Текст вверху',big:'Большая цифра'};
 function covState(r){return COV[r.id]||(COV[r.id]={layout:'low',tag:((r.theme||'').length>2?r.theme:'').toUpperCase(),h:r.title,accent:'',s:'',big:'',lines:'',useFrame:true})}
 function coverBlock(r){const c=covState(r);
@@ -1405,9 +1405,10 @@ function coverBlock(r){const c=covState(r);
     <div class="cvai"><input class="field" id="cvWish" placeholder="Пожелание для ИИ: например, «про агентства», «смешнее», «с цифрой»" value="${esc(c.wish||'')}"><button class="btn sm lil" id="cvAI">${c.busy?'Думаю…':'✨ ИИ: 3 обложки в стиле серии'}</button></div>
     <div class="sub">ИИ видит эталонную серию (About us, Works with, Pricing, How to use, IG formats), уже вышедшие обложки, соседей по календарю и текущий кадр видео. Предлагает разные композиции, чтобы соседние обложки не сливались.</div>
     ${c.err?`<div class="sub" style="color:#b4235a">${esc(c.err)}</div>`:''}
-    ${c.opts&&c.opts.length?`<div class="cvopts">${c.opts.map((o,i)=>`<div class="cvopt"><canvas width="1080" height="1920" data-cvo="${i}"></canvas><div class="sub">${esc(CVL[o.layout]||o.layout||'')}${o.frame?' · с кадром':''}</div><div class="why">${esc(o.why||'')}</div><button class="btn sm lil" data-cvtake="${i}">Взять</button></div>`).join('')}</div>`:''}
+    ${c.opts&&c.opts.length?`<div class="cvopts">${c.opts.map((o,i)=>`<div class="cvopt"><canvas width="1080" height="1920" data-cvo="${i}"></canvas><div class="sub">${esc(CVL[o.layout]||o.layout||'')}${o.theme==='light'?' · светлая':''}${o.frame?' · с кадром':''}</div><div class="why">${esc(o.why||'')}</div><button class="btn sm lil" data-cvtake="${i}">Взять</button></div>`).join('')}</div>`:''}
     <div class="cvwrap"><canvas id="cv" width="1080" height="1920"></canvas><div style="display:grid;gap:8px">
     <div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${Object.entries(CVL).map(([k,v])=>`<button class="btn sm ${c.layout===k?'lil':''}" data-cvl="${k}">${v}</button>`).join('')}</div>
+    <div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${[['dark','● Тёмная'],['light','○ Светлая']].map(([k,v])=>`<button class="btn sm ${(c.theme||'dark')===k?'lil':''}" data-cvth="${k}">${v}</button>`).join('')}</div>
     <input class="field" id="cvTag" placeholder="Рубрика (маленькая плашка), напр. PRICING" value="${esc(c.tag||'')}">
     <textarea class="field" id="cvH" rows="2" placeholder="Заголовок (перенос строки = Enter)">${esc(c.h||'')}</textarea>
     <input class="field" id="cvA" placeholder="Зелёное слово из заголовка (необязательно)" value="${esc(c.accent||'')}">
@@ -1426,26 +1427,34 @@ async function grabFrame(){
     v.onerror=()=>res(null)})}
 function wrapLines(g,text,max){const out=[];for(const para of text.split('\n')){let cur='';for(const w of para.split(/\s+/).filter(Boolean)){const t=cur?cur+' '+w:w;if(g.measureText(t).width>max&&cur){out.push(cur);cur=w}else cur=t}out.push(cur)}return out}
 const GRN='#2FD27A',INK='#070708';
+// темы обложки: тёмная (серия) и светлая (как cover.html?theme=light: тёплый белый, чёрный текст, зелёный маркер)
+const CVT={dark:{bg:INK,grid:'rgba(255,255,255,.04)',txt:'#fff',acc:GRN,hl:null,pillBg:'rgba(255,255,255,.08)',pillTx:'#e6e6ec',mono:'#d6d6dc',arr:GRN,url:'#cfcfd6',glow:'rgba(47,210,122,.45)',ov:'7,7,8'},
+ light:{bg:'#F7F5F4',grid:'rgba(0,0,0,.045)',txt:'#121212',acc:'#121212',hl:'#BDEFC9',pillBg:'rgba(0,0,0,.05)',pillTx:'#555',mono:'#4a4a50',arr:'#1E9E5B',url:'#555',glow:'rgba(47,210,122,0)',ov:'247,245,244'}};
+let PAL=CVT.dark;
 // строка заголовка: слова из accent — зелёные
 function hLine(g,line,x,y,acc,align){const ws=line.split(' ');const sp=g.measureText(' ').width;const W=g.measureText(line).width;let cx=align==='center'?x-W/2:x;
-  for(const w of ws){const k=w.toLowerCase().replace(/[^\p{L}\p{N}$%]/gu,'');g.fillStyle=k&&acc.has(k)?GRN:'#fff';g.fillText(w,cx,y);cx+=g.measureText(w).width+sp}}
+  for(const w of ws){const k=w.toLowerCase().replace(/[^\p{L}\p{N}$%]/gu,'');const on=k&&acc.has(k),ww=g.measureText(w).width;
+    if(on&&PAL.hl){const fs=parseFloat(g.font.match(/(\d+(?:\.\d+)?)px/)[1]);g.fillStyle=PAL.hl;g.fillRect(cx-10,y-fs*.78,ww+20,fs*.9)}
+    g.fillStyle=on?PAL.acc:PAL.txt;g.fillText(w,cx,y);cx+=ww+sp}}
 function pill(g,tag,x,y,align){g.font='600 28px "JetBrains Mono"';g.letterSpacing='6px';const tw=g.measureText(tag).width+76;const x0=align==='center'?x-tw/2:x;
-  g.letterSpacing='0px';g.fillStyle='rgba(255,255,255,.08)';g.beginPath();g.roundRect(x0,y-31,tw,62,31);g.fill();
-  g.fillStyle=GRN;g.beginPath();g.arc(x0+30,y,8,0,7);g.fill();g.fillStyle='#e6e6ec';g.letterSpacing='6px';g.textBaseline='middle';g.fillText(tag,x0+54,y+2);g.letterSpacing='0px';g.textBaseline='alphabetic'}
+  g.letterSpacing='0px';g.fillStyle=PAL.pillBg;g.beginPath();g.roundRect(x0,y-31,tw,62,31);g.fill();
+  g.fillStyle=GRN;g.beginPath();g.arc(x0+30,y,8,0,7);g.fill();g.fillStyle=PAL.pillTx;g.letterSpacing='6px';g.textBaseline='middle';g.fillText(tag,x0+54,y+2);g.letterSpacing='0px';g.textBaseline='alphabetic'}
 function monoLines(g,ls,x,y,align){g.font='600 36px "JetBrains Mono"';ls.forEach((l,i)=>{const t='→ '+l;const W=g.measureText(t).width;const x0=align==='center'?x-W/2:x;
-  g.fillStyle=GRN;g.fillText('→',x0,y+i*58);g.fillStyle='#d6d6dc';g.fillText(l,x0+g.measureText('→ ').width,y+i*58)});return y+ls.length*58}
+  g.fillStyle=PAL.arr;g.fillText('→',x0,y+i*58);g.fillStyle=PAL.mono;g.fillText(l,x0+g.measureText('→ ').width,y+i*58)});return y+ls.length*58}
 async function drawCoverTo(cv,c,frame){
   const g=cv.getContext('2d');
   await Promise.all([document.fonts.load('800 100px "Bricolage Grotesque"'),document.fonts.load('600 28px "JetBrains Mono"')]).catch(()=>{});
   if(!LOGO_W){LOGO_W=new Image();LOGO_W.src='brand/publora_logo_white.svg';await LOGO_W.decode().catch(()=>{})}
+  if(!LOGO_D){LOGO_D=new Image();LOGO_D.src='brand/publora_logo.svg';await LOGO_D.decode().catch(()=>{})}
+  PAL=CVT[c.theme==='light'?'light':'dark'];const O=a=>`rgba(${PAL.ov},${a})`;
   const L0=c.layout||'low';g.textAlign='left';g.letterSpacing='0px';
-  g.fillStyle=INK;g.fillRect(0,0,1080,1920);
+  g.fillStyle=PAL.bg;g.fillRect(0,0,1080,1920);
   if(frame){g.drawImage(frame,0,0);const gr=g.createLinearGradient(0,0,0,1920);
-    if(L0==='top'){gr.addColorStop(0,'rgba(7,7,8,.97)');gr.addColorStop(.38,'rgba(7,7,8,.9)');gr.addColorStop(.6,'rgba(7,7,8,.45)');gr.addColorStop(.85,'rgba(7,7,8,.75)');gr.addColorStop(1,'rgba(7,7,8,.97)')}
-    else if(L0==='big'){gr.addColorStop(0,'rgba(7,7,8,.88)');gr.addColorStop(1,'rgba(7,7,8,.92)')}
-    else{gr.addColorStop(0,'rgba(7,7,8,.35)');gr.addColorStop(.45,'rgba(7,7,8,.55)');gr.addColorStop(.62,'rgba(7,7,8,.92)');gr.addColorStop(1,'rgba(7,7,8,.97)')}
+    if(L0==='top'){gr.addColorStop(0,O(.97));gr.addColorStop(.38,O(.9));gr.addColorStop(.6,O(.45));gr.addColorStop(.85,O(.75));gr.addColorStop(1,O(.97))}
+    else if(L0==='big'){gr.addColorStop(0,O(.88));gr.addColorStop(1,O(.92))}
+    else{gr.addColorStop(0,O(.35));gr.addColorStop(.45,O(.55));gr.addColorStop(.62,O(.92));gr.addColorStop(1,O(.97))}
     g.fillStyle=gr;g.fillRect(0,0,1080,1920)}
-  else{g.strokeStyle='rgba(255,255,255,.04)';g.lineWidth=1;for(let x=0;x<=1080;x+=120){g.beginPath();g.moveTo(x+.5,0);g.lineTo(x+.5,1920);g.stroke()}for(let y=0;y<=1920;y+=120){g.beginPath();g.moveTo(0,y+.5);g.lineTo(1080,y+.5);g.stroke()}}
+  else{g.strokeStyle=PAL.grid;g.lineWidth=1;for(let x=0;x<=1080;x+=120){g.beginPath();g.moveTo(x+.5,0);g.lineTo(x+.5,1920);g.stroke()}for(let y=0;y<=1920;y+=120){g.beginPath();g.moveTo(0,y+.5);g.lineTo(1080,y+.5);g.stroke()}}
   const tag=(c.tag||'').trim(),h=(c.h||'').trim(),sl=(c.s||'').trim(),big=(c.big||'').trim();
   const ls=String(c.lines||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,3);
   const acc=new Set(String(c.accent||'').toLowerCase().split(/\s+/).map(w=>w.replace(/[^\p{L}\p{N}$%]/gu,'')).filter(Boolean));
@@ -1453,14 +1462,14 @@ async function drawCoverTo(cv,c,frame){
     while((L.length*size>maxH||L.some(l=>g.measureText(l).width>maxW))&&size>60){size-=6;g.font=`800 ${size}px "Bricolage Grotesque"`;L=wrapLines(g,h,maxW)}return [size,L]};
   const head=(size,L,x,y,align)=>{g.font=`800 ${size}px "Bricolage Grotesque"`;g.letterSpacing=`${-size*.04}px`;L.forEach((l,i)=>hLine(g,l,x,y+i*size*.98,acc,align));g.letterSpacing='0px';return y+(L.length-1)*size*.98};
   const slab=(y)=>{g.font='800 120px "Bricolage Grotesque"';g.letterSpacing='-5px';const w=g.measureText(sl).width+60;
-    g.save();g.translate(80,y);g.rotate(-2.5*Math.PI/180);g.shadowColor='rgba(47,210,122,.55)';g.shadowBlur=70;g.fillStyle=GRN;g.beginPath();g.roundRect(0,0,w,150,24);g.fill();
+    g.save();g.translate(80,y);g.rotate(-2.5*Math.PI/180);g.shadowColor=PAL.hl?'rgba(47,210,122,.25)':'rgba(47,210,122,.55)';g.shadowBlur=PAL.hl?30:70;g.fillStyle=GRN;g.beginPath();g.roundRect(0,0,w,150,24);g.fill();
     g.shadowBlur=0;g.fillStyle=INK;g.fillText(sl,28,112);g.restore();g.letterSpacing='0px';return y+170};
   if(L0==='big'){
     if(tag)pill(g,tag,540,330,'center');
     let bs=600;const bf=()=>{g.font=`800 ${bs}px "Bricolage Grotesque"`;g.letterSpacing=`${-bs*.05}px`};bf();while(g.measureText(big).width>940&&bs>160){bs-=20;bf()}
-    const by=420+bs*.8,W=g.measureText(big).width;let bx=540-W/2;g.shadowColor='rgba(47,210,122,.45)';g.shadowBlur=60;
+    const by=420+bs*.8,W=g.measureText(big).width;let bx=540-W/2;g.shadowColor=PAL.glow;g.shadowBlur=60;const BG=PAL.hl?'#1E9E5B':GRN;
     const accb=String(c.accent||''),inBig=accb&&[...big].some(ch=>accb.includes(ch)),allD=/^[\d.,:]+$/.test(big);
-    for(const ch of big){g.fillStyle=inBig?(accb.includes(ch)?GRN:'#fff'):allD?GRN:(/[\d.,:]/.test(ch)?'#fff':GRN);g.fillText(ch,bx,by);bx+=g.measureText(ch).width}
+    for(const ch of big){g.fillStyle=inBig?(accb.includes(ch)?BG:PAL.txt):allD?BG:(/[\d.,:]/.test(ch)?PAL.txt:BG);g.fillText(ch,bx,by);bx+=g.measureText(ch).width}
     g.shadowBlur=0;g.letterSpacing='0px';let y=by+60;
     if(h){const [size,L]=fit(260,920,100);y=head(size,L,540,y+size*.8,'center')+40}
     if(ls.length)monoLines(g,ls,540,y+40,'center');
@@ -1473,8 +1482,8 @@ async function drawCoverTo(cv,c,frame){
     let y=Math.max(820,1500-bodyH);if(tag){pill(g,tag,80,y,'left');y+=70}
     y=head(size,L,76,y+size*.8,'left')+30;if(sl)y=slab(y);if(ls.length)monoLines(g,ls,82,y+40,'left');
   }
-  if(LOGO_W&&LOGO_W.naturalWidth&&CL.slug==='publora')g.drawImage(LOGO_W,80,1545,300,300*253/917);
-  g.font='600 30px "JetBrains Mono"';g.fillStyle='#cfcfd6';g.textAlign='right';g.fillText('publora.com →',1000,1600);g.textAlign='left';
+  const LG=PAL.hl?LOGO_D:LOGO_W;if(LG&&LG.naturalWidth&&CL.slug==='publora')g.drawImage(LG,80,1545,300,300*253/917);
+  g.font='600 30px "JetBrains Mono"';g.fillStyle=PAL.url;g.textAlign='right';g.fillText('publora.com →',1000,1600);g.textAlign='left';
 }
 async function drawCover(r){const cv=$('cv');if(!cv)return;const c=covState(r);await drawCoverTo(cv,c,c.useFrame?c.frame:null)}
 function frameB64(f){const s=document.createElement('canvas');s.width=432;s.height=768;s.getContext('2d').drawImage(f,0,0,432,768);try{return s.toDataURL('image/jpeg',.7)}catch(e){return null}}
@@ -1486,12 +1495,13 @@ async function coverAI(r){const c=covState(r);if(c.busy)return;c.wish=$('cvWish'
   if(!msg&&!c.opts.length)c.err='ИИ ответил не по формату, попробуйте ещё раз';
   if(CUR&&CUR.id===r.id)rerenderCover(r)}
 function rerenderCover(r){const box=$('cvBox');if(!box)return;box.innerHTML=coverBlock(r);bindCover(r)}
-function takeOpt(c,o){Object.assign(c,{layout:o.layout||'low',tag:o.tag||'',h:o.h||'',accent:o.accent||'',s:o.slab||'',big:o.big||'',lines:(o.lines||[]).join('\n'),useFrame:!!o.frame})}
+function takeOpt(c,o){Object.assign(c,{layout:o.layout||'low',tag:o.tag||'',h:o.h||'',accent:o.accent||'',s:o.slab||'',big:o.big||'',lines:(o.lines||[]).join('\n'),useFrame:!!o.frame,theme:o.theme==='light'?'light':'dark'})}
 function bindCover(r){
   const c=covState(r);const re=()=>{c.tag=$('cvTag').value;c.h=$('cvH').value;c.accent=$('cvA').value;c.s=$('cvS').value;c.lines=$('cvL').value;if($('cvB'))c.big=$('cvB').value;drawCover(r)};
   ['cvTag','cvH','cvA','cvS','cvL','cvB'].forEach(i=>{if($(i))$(i).oninput=re});
   $('cvWish').oninput=e=>c.wish=e.target.value;$('cvWish').onkeydown=e=>{if(e.key==='Enter')coverAI(r)};$('cvAI').onclick=()=>coverAI(r);
   document.querySelectorAll('[data-cvl]').forEach(b=>b.onclick=()=>{c.layout=b.dataset.cvl;rerenderCover(r)});
+  document.querySelectorAll('[data-cvth]').forEach(b=>b.onclick=()=>{c.theme=b.dataset.cvth;rerenderCover(r)});
   document.querySelectorAll('[data-cvo]').forEach(cv=>{const o=c.opts[+cv.dataset.cvo];const t={};takeOpt(t,o);drawCoverTo(cv,t,t.useFrame?c.frame:null)});
   document.querySelectorAll('[data-cvtake]').forEach(b=>b.onclick=()=>{takeOpt(c,c.opts[+b.dataset.cvtake]);rerenderCover(r);toast('Вариант в редакторе: можно поправить и поставить обложкой')});
   $('cvFrame').onclick=async()=>{const b=$('cvFrame');b.disabled=true;const f=await grabFrame();b.disabled=false;if(!f)return toast('Кадр не взялся: сначала загрузите видео');c.frame=f;c.useFrame=true;drawCover(r)};
