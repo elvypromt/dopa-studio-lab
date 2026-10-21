@@ -506,6 +506,11 @@ body.studio .gd .ge{display:grid}
 </style>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style id="perf">/* производительность: на сотнях плашек обводка крутится только у главных и под курсором, у строк списков нет живого размытия фона (иначе экран моргает) */
+.glass::before{animation-play-state:paused}
+.glass:hover::before,.top .bar::before,.hi::before,.ringbox::before{animation-play-state:running}
+.qr.glass,.pi.glass,.day.glass,.gd.glass,.task.glass,.scard.glass,.col.glass{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(255,255,255,.58)}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
