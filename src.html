@@ -292,6 +292,20 @@ body.studio .gd .ge{display:grid}
 .mdr select{height:36px;border-radius:12px;border:0;padding:0 10px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);font:600 14px var(--sans);color:var(--ink)}
 .mdr .row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px}
 @media(max-width:640px){#mapBox{height:72vh}.mapbar .q{min-width:0;flex:1}.mleg{display:none}}
+/* телефон: карта-оглавление сверху вниз, текст в натуральную величину, страница скроллится сама */
+#mapBox.ol{touch-action:pan-y;cursor:auto;user-select:auto;-webkit-user-select:auto;min-height:360px}
+#mapBox.ol .mtools,#mapBox.ol .mleg{display:none}
+#mapBox.ol .mupd{left:16px;right:auto;bottom:10px}
+#mapBox.ol .mn-root{font-size:26px;padding:11px 20px}
+#mapBox.ol .mn-branch{font-size:16px;padding:10px 12px 10px 13px}
+#mapBox.ol .mn-leaf{white-space:normal;font-size:13.5px;line-height:1.3;padding:7px 11px 7px 9px;align-items:flex-start}
+#mapBox.ol .mn-leaf .dot{margin-top:4px;flex:none}
+#mapBox.ol .mn-leaf .lt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal}
+.mdr.sheet{position:fixed;left:8px;right:auto;top:auto;bottom:8px;width:calc(var(--vvw,100vw) - 16px);max-height:76vh;z-index:96;transform:translateY(115%)}
+.mdr.sheet.on{transform:none}
+.mdr{grid-template-columns:minmax(0,1fr)}.mdr>*{min-width:0}.mdr .mpill{justify-self:start;max-width:calc(100% - 44px)}.mdr .sec div,.mdr h3{overflow-wrap:anywhere}
+@media(max-width:900px){.strat,.proc{grid-template-columns:minmax(0,1fr)}.strat .scard,.proc .pday{min-width:0}.strat .row{flex-wrap:wrap}.strat input{min-width:0;max-width:100%}.pday,.its,.pi>*{min-width:0}.pi,.pday h3,.strat h3{overflow-wrap:anywhere}.scard{grid-template-columns:minmax(0,1fr)}.q{min-width:0}.qr{grid-template-columns:22px 40px minmax(0,1fr) auto;gap:8px}.qr .th{display:none}.phone-wrap{grid-template-columns:minmax(0,360px)}.lab,.note{grid-template-columns:minmax(0,1fr)}.note>*{min-width:0}.note .tx{overflow-wrap:anywhere}.note .acts{flex-wrap:wrap}html,body{overflow-x:clip}}
+@media(max-width:700px){.dock{left:8px;right:8px;transform:none;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}.dock::-webkit-scrollbar{display:none}.dock button{flex:0 0 auto}input,select,textarea{font-size:16px!important}}
 .mdr .dot{width:9px;height:9px;border-radius:50%;background:var(--c);display:inline-block}
 </style>
 <script src="config.js"></script>
@@ -1641,7 +1655,7 @@ function mPlace(n,x,y,dir){n.x=x;n.y=y;n.dir=dir;if(!n.vk.length)return;const g=
 function mBounds(ms){let a=1e9,b=1e9,c=-1e9,d=-1e9;ms.forEach(m=>{a=Math.min(a,m.tx-m.w/2);c=Math.max(c,m.tx+m.w/2);b=Math.min(b,m.ty-m.h/2);d=Math.max(d,m.ty+m.h/2)});return {a,b,c,d}}
 function mFitTo(B,maxK){const box=$('mapBox'),dr=MSEL&&box.clientWidth>700?Math.min(400,box.clientWidth*.45):0,W=box.clientWidth-dr,H=box.clientHeight,pad=46;
   const k=mClamp(Math.min(maxK||1.1,(W-pad*2)/Math.max(1,B.c-B.a),(H-pad*2)/Math.max(1,B.d-B.b)));return {k,x:W/2-(B.a+B.c)/2*k,y:H/2-(B.b+B.d)/2*k}}
-function mKeep(id){const m=MEL.get(id),box=$('mapBox');if(!m||!box)return;const W=box.clientWidth,dr=W>700?Math.min(400,W*.45)+24:0,pad=28;
+function mKeep(id){const m=MEL.get(id),box=$('mapBox');if(!m||!box||box.classList.contains('ol'))return;const W=box.clientWidth,dr=W>700?Math.min(400,W*.45)+24:0,pad=28;
   const B=MVT||MV,l=(m.tx-m.w/2)*B.k+B.x,r=(m.tx+m.w/2)*B.k+B.x,t=(m.ty-m.h/2)*B.k+B.y,b=(m.ty+m.h/2)*B.k+B.y,H=box.clientHeight;
   let dx=0,dy=0;if(r>W-dr-pad)dx=W-dr-pad-r;if(l+dx<pad)dx=pad-l;if(b>H-pad)dy=H-pad-b;if(t+dy<pad)dy=pad-t;
   if(dx||dy){MVF={...MV};MVT={...B,x:B.x+dx,y:B.y+dy};mapAnim()}}
@@ -1649,6 +1663,8 @@ function mapView(){$('mapWorld').style.transform=`translate(${MV.x}px,${MV.y}px)
 function renderMap(how){
   const box=$('mapBox');if(!box||!ME||ME.role!=='studio')return;
   if(!box.clientWidth){if(MWAIT++<20)setTimeout(()=>renderMap(how),400);return}MWAIT=0;
+  const OL=box.clientWidth<640&&!box.classList.contains('full');if(box.classList.contains('ol')!==OL){box.classList.toggle('ol',OL);MFIT0=false}
+  const drw=$('mapDr');if(drw){const home=OL?box.parentNode:box;if(drw.parentNode!==home)home.appendChild(drw);drw.classList.toggle('sheet',OL);if(OL&&window.visualViewport)document.documentElement.style.setProperty('--vvw',visualViewport.width+'px')}
   const root=mapTree(),open=new Set(MOPEN);open.add('root');MHITS=new Set();
   if(MQ){const q=MQ.toLowerCase();const w=n=>{if(n.kind==='leaf'){if(mHay(n).includes(q)){MHITS.add(n.id);for(let p=n.p;p;p=p.p)open.add(p.id)}}else n.kids.forEach(w)};w(root)}
   const vis=[];const visit=n=>{n.vk=n.kind!=='leaf'&&open.has(n.id)?n.kids:[];n.open=!!n.vk.length;vis.push(n);n.vk.forEach(visit)};visit(root);
@@ -1660,23 +1676,33 @@ function renderMap(how){
     const cls=`mn mn-${n.kind}${n.sm?' sm':''}${n.open?' open':''}${n.st==='no'&&n.kind==='leaf'?' no':''}${n.st==='done'?' done':''}${MSEL===n.id?' on':''}${MHITS.has(n.id)?' hit':''}${MQ&&n.kind==='leaf'&&!MHITS.has(n.id)?' dim':''}`;
     if(m.el.className!==cls)m.el.className=cls;m.el.style.setProperty('--c',n.c);
     const h=mNodeHtml(n);if(m.k!==h){m.el.innerHTML=h;m.k=h}if(n.kind==='leaf')m.el.title=n.t});
+  const IND=22,OX=12;vis.forEach(n=>{const m=MEL.get(n.id);let d=0;for(let p=n.p;p;p=p.p)d++;n.d=d;
+    const mw=OL&&n.kind==='leaf'?Math.max(140,box.clientWidth-OX-d*IND-12)+'px':'';if(m.el.style.maxWidth!==mw){m.el.style.maxWidth=mw;m.el.style.width=mw}});
   vis.forEach(n=>{const m=MEL.get(n.id);m.w=n.w=m.el.offsetWidth;m.h=n.h=m.el.offsetHeight});
+  if(OL){let y=14;const lay=n=>{if(n.kind==='branch'&&n.p.vk[0]!==n)y+=6;n.x=OX+n.d*IND+n.w/2;n.y=y+n.h/2;n.dir=1;
+      y+=n.h+(n.kind==='root'?16:n.kind==='branch'?8:n.kind==='group'?6:5);n.vk.forEach(lay)};lay(root);
+    box.style.height=Math.max(360,y+34)+'px'}
+  else{if(box.style.height)box.style.height='';
   root.x=0;root.y=0;root.dir=1;const S={1:[],'-1':[]};let rs=0,ls=0;
   root.kids.forEach(b=>{const w=1+Math.sqrt(b.n);if(rs<=ls){S[1].push(b);rs+=w}else{S[-1].push(b);ls+=w}});
   [1,-1].forEach(dir=>{const L=S[dir];if(!L.length)return;let tot=0;L.forEach((b,i)=>tot+=mSize(b)+(i?MG.root:0));let top=-tot/2;
-    L.forEach(b=>{mPlace(b,dir*(root.w/2+MGX.root+b.w/2),top+b.sh/2,dir);top+=b.sh+MG.root})});
+    L.forEach(b=>{mPlace(b,dir*(root.w/2+MGX.root+b.w/2),top+b.sh/2,dir);top+=b.sh+MG.root})})}
   vis.forEach(n=>{const m=MEL.get(n.id);m.fx=m.cx;m.fy=m.cy;m.fo=m.o;m.tx=n.x;m.ty=n.y;m.to=1;m.pid=n.p?n.p.id:null;m.dir=n.dir;m.pk=n.p?n.p.kind:null;
     if(m.pid&&!MPATH.has(n.id)){const p=document.createElementNS('http://www.w3.org/2000/svg','path');svg.appendChild(p);MPATH.set(n.id,p)}});
   MEL.forEach((m,id)=>{if(byId.has(id))return;m.gone=true;let p=m.n.p;while(p&&!byId.has(p.id))p=p.p;const pn=p&&byId.get(p.id);
     m.fx=m.cx;m.fy=m.cy;m.fo=m.o;m.tx=pn?pn.x:0;m.ty=pn?pn.y:0;m.to=0;m.el.style.pointerEvents='none'});
   const live=[...MEL.values()].filter(m=>!m.gone);
-  if(how==='fit'||!MFIT0){const v=mFitTo(mBounds(live));if(!MFIT0){MV=v;MFIT0=true;MVT=null}else{MVF={...MV};MVT=v}}
+  if(OL){MVT=null;MV={x:0,y:0,k:1};MFIT0=false}
+  else if(how==='fit'||!MFIT0){const v=mFitTo(mBounds(live));if(!MFIT0){MV=v;MFIT0=true;MVT=null}else{MVF={...MV};MVT=v}}
   else if(how&&how.focus){const ids=new Set();const sub=n=>{ids.add(n.id);n.vk.forEach(sub)};const fn=byId.get(how.focus);if(fn){sub(fn);
     const B=mBounds(live.filter(m=>ids.has(m.n.id))),pad=30,W=box.clientWidth,H=box.clientHeight;
     const inView=B.a*MV.k+MV.x>pad&&B.c*MV.k+MV.x<W-pad&&B.b*MV.k+MV.y>pad&&B.d*MV.k+MV.y<H-pad;
     if(!inView){MVF={...MV};MVT=mFitTo(B,MV.k)}}}
   mapAnim()}
-function mapDraw(){MEL.forEach((m,id)=>{const path=MPATH.get(id);if(!path)return;const P=m.pid&&MEL.get(m.pid);if(!P){path.setAttribute('d','');return}
+function mapDraw(){const OL=$('mapBox').classList.contains('ol');MEL.forEach((m,id)=>{const path=MPATH.get(id);if(!path)return;const P=m.pid&&MEL.get(m.pid);if(!P){path.setAttribute('d','');return}
+  if(OL){const px=P.cx-P.w/2+11,py=P.cy+P.h/2-2,cx=m.cx-m.w/2,cy=m.cy,r=Math.max(0,Math.min(7,cy-py,cx-px));
+    path.setAttribute('d',`M${px.toFixed(1)},${py.toFixed(1)} L${px.toFixed(1)},${(cy-r).toFixed(1)} Q${px.toFixed(1)},${cy.toFixed(1)} ${(px+r).toFixed(1)},${cy.toFixed(1)} L${cx.toFixed(1)},${cy.toFixed(1)}`);
+    path.setAttribute('stroke',m.n.c);path.setAttribute('stroke-width',m.pk==='root'?2.6:m.pk==='branch'?2:1.4);path.setAttribute('opacity',(m.pk==='root'?.6:.45)*m.o);return}
   const d=m.dir||1,px=P.cx+(P.n.kind==='root'?d*P.w*.32:d*P.w/2),py=P.cy,cx=m.cx-d*m.w/2,cy=m.cy,mx=px+(cx-px)*.5;
   path.setAttribute('d',`M${px.toFixed(1)},${py.toFixed(1)} C${mx.toFixed(1)},${py.toFixed(1)} ${mx.toFixed(1)},${cy.toFixed(1)} ${cx.toFixed(1)},${cy.toFixed(1)}`);
   path.setAttribute('stroke',m.n.c);path.setAttribute('stroke-width',m.pk==='root'?3.6:m.pk==='branch'?2.4:1.5);path.setAttribute('opacity',(m.pk==='root'?.7:.5)*m.o)})}
@@ -1718,7 +1744,7 @@ function mapFull(){const b=$('mapBox');b.classList.toggle('full');document.body.
 function mapZoom(f){const b=$('mapBox'),px=b.clientWidth/2,py=b.clientHeight/2,k=mClamp(MV.k*f);MVF={...MV};MVT={k,x:px-(px-MV.x)*k/MV.k,y:py-(py-MV.y)*k/MV.k};mapAnim()}
 (function mapBind(){const box=$('mapBox');if(!box)return;const P=new Map();let st=null;
   const pinch=()=>{const [a,b]=[...P.values()];return {d:Math.hypot(a.x-b.x,a.y-b.y)||1,mx:(a.x+b.x)/2,my:(a.y+b.y)/2}};
-  box.addEventListener('pointerdown',e=>{if(e.target.closest('.mdr,.mtools,.mleg'))return;P.set(e.pointerId,{x:e.clientX,y:e.clientY});MDRAG=false;MVT=null;
+  box.addEventListener('pointerdown',e=>{if(box.classList.contains('ol')||e.target.closest('.mdr,.mtools,.mleg'))return;P.set(e.pointerId,{x:e.clientX,y:e.clientY});MDRAG=false;MVT=null;
     st={x:e.clientX,y:e.clientY,vx:MV.x,vy:MV.y,k:MV.k};if(P.size===2)Object.assign(st,pinch())});
   box.addEventListener('pointermove',e=>{if(!P.has(e.pointerId)||!st)return;P.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(P.size===2){const p=pinch(),r=box.getBoundingClientRect(),mx=st.mx-r.left,my=st.my-r.top,k=mClamp(st.k*p.d/st.d);
@@ -1732,9 +1758,10 @@ function mapZoom(f){const b=$('mapBox'),px=b.clientWidth/2,py=b.clientHeight/2,k
     if(n.kind==='leaf'){MSEL=MSEL===id?null:id;renderMapDr();renderMap();if(MSEL)mKeep(id)}
     else if(n.kind==='root'){if(MOPEN.size)MOPEN.clear();else MBR.forEach(b=>MOPEN.add('b:'+b[0]));renderMap('fit')}
     else{MOPEN.has(id)?MOPEN.delete(id):MOPEN.add(id);renderMap({focus:id})}});
-  box.addEventListener('wheel',e=>{if(e.target.closest('.mdr'))return;e.preventDefault();MVT=null;const r=box.getBoundingClientRect();
+  box.addEventListener('wheel',e=>{if(box.classList.contains('ol')||e.target.closest('.mdr'))return;e.preventDefault();MVT=null;const r=box.getBoundingClientRect();
     if(e.ctrlKey||e.metaKey){const px=e.clientX-r.left,py=e.clientY-r.top,k=mClamp(MV.k*Math.exp(-e.deltaY*.012));MV={k,x:px-(px-MV.x)*k/MV.k,y:py-(py-MV.y)*k/MV.k}}
     else MV={...MV,x:MV.x-e.deltaX,y:MV.y-e.deltaY};mapView()},{passive:false});
+  let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(box.offsetParent&&(box.clientWidth<640)!==box.classList.contains('ol'))renderMap('fit')},250)});
   $('mapIn').onclick=()=>mapZoom(1.25);$('mapOut').onclick=()=>mapZoom(.8);$('mapFit').onclick=()=>renderMap('fit');$('mapFull').onclick=mapFull;
   let qt;$('mapQ').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{MQ=e.target.value.trim();renderMap('fit')},220)};
   $('mapOpen').onclick=()=>{MOPEN.clear();const w=n=>{if(n.kind==='leaf')return;if(n.kind==='branch'||n.kids.some(k=>k.kind!=='leaf'))MOPEN.add(n.id);n.kids.forEach(w)};w(mapTree());renderMap('fit')};
@@ -1761,6 +1788,7 @@ function renderAll(full=true){renderCheck();renderLab();renderMap();renderProc()
   if(m){history.replaceState(null,'',location.pathname+location.search);try{await sb.auth.signOut({scope:'local'});await loginWithCode(m[1])}catch(e){showLogin();$('loginErr').textContent='Ссылка не сработала, введите код вручную';return}}
   try{await start()}catch(e){console.error(e);showLogin();$('loginErr').textContent='Не получилось загрузить кабинет, попробуйте ещё раз'}
 })();
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#dock button');if(b&&innerWidth<=700)setTimeout(()=>b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'}),30)});
 </script>
 </body>
 </html>
