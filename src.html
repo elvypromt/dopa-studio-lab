@@ -137,6 +137,10 @@ body.studio .gd .ge{display:grid}
 .tile .nocta{position:absolute;top:40px;right:10px;padding:4px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:#D4505E;box-shadow:0 2px 8px rgba(212,80,94,.4)}
 .tile .fav{position:absolute;top:38px;left:6px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(40,18,34,.35);color:#fff;font-size:17px;line-height:30px;padding:0;cursor:pointer;opacity:.75;transition:transform .3s var(--spring),opacity .2s}
 .tile .fav:hover{opacity:1;transform:scale(1.15)}
+.tile .del{position:absolute;top:74px;left:6px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(40,18,34,.35);color:#fff;font-size:14px;line-height:30px;padding:0;cursor:pointer;opacity:0;transition:transform .3s var(--spring),opacity .2s,background .2s;z-index:3}
+.tile:hover .del,.tile .del:focus-visible{opacity:.8}
+.tile .del:hover{opacity:1;transform:scale(1.15);background:#B8323F}
+@media(hover:none){.tile .del{opacity:.7}}
 .tile .fav.on{opacity:1;color:#FFD34D;background:rgba(40,18,34,.55);text-shadow:0 0 10px rgba(255,211,77,.7)}
 .tile .novo{position:absolute;top:66px;right:10px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;color:#fff;background:rgba(40,18,34,.6)}
 .tile .info .hl{display:inline-block;margin-top:4px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.22)}
@@ -937,6 +941,7 @@ function renderWall(){
   document.querySelectorAll('.tile').forEach(t=>{t.onclick=()=>openSheet(t.dataset.id);t.onpointermove=e=>{const b=t.getBoundingClientRect();t.style.setProperty('--ry',((e.clientX-b.left)/b.width-.5)*8+'deg')}});
   document.querySelectorAll('.tile .fav').forEach(b=>b.onclick=async e=>{e.stopPropagation();const r=REELS.find(x=>x.id===b.dataset.fav);if(!r)return;const v=!r.fav;r.fav=v;renderFilters();renderWall();
     const {error}=await sb.from('reels').update({fav:v}).eq('id',r.id);if(error){r.fav=!v;renderFilters();renderWall();fail(error)}else toast(v?'Ролик '+r.code+' в избранном':'Убран из избранного')});
+  document.querySelectorAll('.tile .del').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=REELS.find(x=>x.id===b.dataset.del);if(r)deleteReel(r)});
 }
 function codeKey(c){const m=String(c).match(/^(\d+)(.*)$/);return m?[+m[1],m[2]]:[1e9,String(c)]}
 function byCode(a,b){const x=codeKey(a.code),y=codeKey(b.code);return x[0]-y[0]||x[1].localeCompare(y[1])}
@@ -958,12 +963,23 @@ $('rlQ').oninput=renderList;
 function tileHtml(r,s,p,n){
     return `<div class="tile" data-id="${r.id}">${p?`<img src="${p}" alt="" loading="lazy">`:`<div class="noimg">${esc(r.code)}</div>`}
       <div class="pill"><i style="background:${s.c}"></i>${s.t}</div>${p?`<div class="num">${esc(r.code)}</div>`:''}
-      ${studio()?`<button class="fav ${r.fav?'on':''}" data-fav="${r.id}" title="В избранное">${r.fav?'★':'☆'}</button>`:''}${n?`<div class="cm">${n} комм.</div>`:''}<div class="shade"></div>
+      ${studio()?`<button class="fav ${r.fav?'on':''}" data-fav="${r.id}" title="В избранное">${r.fav?'★':'☆'}</button><button class="del" data-del="${r.id}" title="Удалить ролик" aria-label="Удалить ролик">✕</button>`:''}${n?`<div class="cm">${n} комм.</div>`:''}<div class="shade"></div>
       ${r.end_cta==='none'?'<div class="nocta">НЕТ ПРИЗЫВА</div>':''}${r.voiced===false?'<div class="novo">без голоса</div>':''}
       <div class="info"><b>${esc(r.title)}</b><small>${r.day?esc(dayLabel(r.day)):esc(BATCH_T[r.batch]||'')}${r.dur?' · '+Math.round(r.dur)+' с':''}</small>${r.hl&&GRP!=='hl'?`<span class="hl">${esc(r.hl)}</span>`:''}</div></div>`;
 }
 
 // хайлайт, тема, призыв в конце: правит студия прямо в карточке ролика
+async function deleteReel(r){
+  const live=['sched','pub'].includes(r.status)||r.publora_id||(r.publora_posts&&r.publora_posts.length);
+  if(!confirm('Удалить ролик '+r.code+(r.title?' «'+r.title+'»':'')+' из комнаты насовсем?\nВидео, обложка и комментарии к нему тоже удалятся.'+(live?'\n\nВнимание: пост в Publora и в соцсети от этого не отменится и не удалится.':'')))return;
+  const {data,error}=await sb.from('reels').delete().eq('id',r.id).select('id');
+  if(error||!data||!data.length)return fail(error||new Error('reel not deleted'),'Не получилось удалить');
+  const files=[r.video_path,r.poster_path].filter(Boolean);
+  if(files.length)sb.storage.from(BUCKET).remove(files).then(({error:e})=>{if(e)console.error(e)});
+  REELS=REELS.filter(x=>x.id!==r.id);CMS=CMS.filter(c=>c.reel_id!==r.id);
+  if(CUR&&CUR.id===r.id){CUR=null;closeSheet()}
+  renderAll();toast('Ролик '+r.code+' удалён');
+}
 async function patchReel(r,patch,msg){const {error}=await sb.from('reels').update(patch).eq('id',r.id);if(error)return fail(error);Object.assign(r,patch);renderSheet();renderFilters();renderWall();toast(msg)}
 document.addEventListener('change',e=>{if(!studio()||!CUR)return;
   if(e.target.id==='eHl')patchReel(CUR,{hl:e.target.value||null},'Хайлайт сохранён');
@@ -1135,6 +1151,7 @@ function renderSheet(soft){
     <div class="approve-row">
       <button class="btn pri" id="approve">${['ok','sched','pub'].includes(r.status)?'Одобрено':'Одобрить ролик'}</button>
       ${r.status==='pub'?'':`<button class="btn sm" id="askFix">${r.status==='fix'?'Ждёт правок':'Нужна правка'}</button>`}${r.status==='pub'?'':`<button class="btn sm${r.status==='hold'?' on':''}" id="askHold" title="${r.status==='hold'?'Нажмите ещё раз, чтобы вернуть на проверку':'Отложить: пока не уверены в ролике'}">${r.status==='hold'?'Сомневаюсь ✓':'Сомневаюсь'}</button>`}
+      ${st?`<button class="btn sm" id="delReel" style="color:#B8323F">Удалить ролик</button>`:''}
       <span class="sub">${st?'Вы смотрите как студия: статус и подпись можно менять':'«Нужна правка» + комментарий к секунде = ролик уходит на доработку до публикации'}</span>
     </div>`;
   renderComments();
@@ -1145,6 +1162,7 @@ function renderSheet(soft){
   $('copyCap').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(st?$('eCap').value:(r.caption||''));toast('Подпись скопирована')};
   if(st){$('eSave').onclick=async()=>{const upd={title:$('eTitle').value.trim(),caption:$('eCap').value,day:$('eDay').value||null};
     const {error}=await sb.from('reels').update(upd).eq('id',r.id);if(error)return fail(error);Object.assign(r,upd);renderAll(false);toast('Сохранено')};
+    $('delReel').onclick=()=>deleteReel(r);
     $('upVid').onchange=e=>uploadVideo(r,e.target.files[0]);$('upPos').onchange=e=>uploadPoster(r,e.target.files[0])}
   if(st){bindPub(r);renderAI(r);bindCover(r)}
   const inp=$('cmIn'),err=$('cmErr');
